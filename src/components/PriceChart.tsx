@@ -21,18 +21,20 @@ const PriceChart = ({ pair, timeframe }: PriceChartProps) => {
     const generatePriceData = () => {
       const basePrice = pair === "EUR/USD" ? 1.0850 : 
                        pair === "GBP/USD" ? 1.2650 :
-                       pair === "USD/JPY" ? 149.50 : 1.0950;
+                       pair === "USD/JPY" ? 149.50 : 
+                       pair === "BTC/USD" ? 67500 : 1.0950;
       
       const data = [];
       let price = basePrice;
       
       for (let i = 0; i < 50; i++) {
-        const change = (Math.random() - 0.5) * 0.01;
+        const volatility = pair === "BTC/USD" ? 0.05 : 0.01; // BTC более волатилен
+        const change = (Math.random() - 0.5) * volatility;
         price += change;
         data.push({
           time: new Date(Date.now() - (49 - i) * 60000).toLocaleTimeString(),
-          price: Number(price.toFixed(4)),
-          volume: Math.floor(Math.random() * 1000) + 500
+          price: pair === "BTC/USD" ? Math.round(price) : Number(price.toFixed(4)),
+          volume: Math.floor(Math.random() * (pair === "BTC/USD" ? 5000 : 1000)) + (pair === "BTC/USD" ? 2000 : 500)
         });
       }
       
@@ -53,6 +55,7 @@ const PriceChart = ({ pair, timeframe }: PriceChartProps) => {
   }, [pair, timeframe]);
 
   const formatPrice = (price: number) => {
+    if (pair === "BTC/USD") return `$${price.toFixed(0)}`;
     return pair.includes("JPY") ? price.toFixed(2) : price.toFixed(4);
   };
 
@@ -60,7 +63,12 @@ const PriceChart = ({ pair, timeframe }: PriceChartProps) => {
     <Card className="p-6 bg-slate-800/50 border-slate-700 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-semibold text-white mb-2">{pair}</h3>
+          <div className="flex items-center space-x-3 mb-2">
+            <h3 className="text-xl font-semibold text-white">{pair}</h3>
+            {pair === "BTC/USD" && (
+              <Badge className="bg-orange-600 text-white">КРИПТО</Badge>
+            )}
+          </div>
           <div className="flex items-center space-x-4">
             <span className="text-2xl font-bold text-white">
               {formatPrice(currentPrice)}

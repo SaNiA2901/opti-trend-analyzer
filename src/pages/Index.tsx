@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import MLPredictions from "@/components/MLPredictions";
 import RiskManagement from "@/components/RiskManagement";
 import AutoTradingStrategies from "@/components/AutoTradingStrategies";
 import AdvancedAnalytics from "@/components/AdvancedAnalytics";
+import WeightedPriceForecast from "@/components/WeightedPriceForecast";
 import { TrendingUp, TrendingDown, BarChart } from "lucide-react";
 
 const Index = () => {
@@ -20,7 +22,7 @@ const Index = () => {
 
   const currencyPairs = [
     "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", 
-    "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP"
+    "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP", "BTC/USD"
   ];
 
   const timeframes = [
@@ -45,7 +47,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">OptiTrend Analyzer</h1>
-                <p className="text-slate-400 text-sm">Профессиональный анализ валютного рынка</p>
+                <p className="text-slate-400 text-sm">Профессиональный анализ валютного рынка и криптовалют</p>
               </div>
             </div>
             
@@ -95,6 +97,9 @@ const Index = () => {
                 <TabsTrigger value="chart" className="data-[state=active]:bg-blue-600">
                   График цены
                 </TabsTrigger>
+                <TabsTrigger value="forecast" className="data-[state=active]:bg-blue-600">
+                  Прогноз цены
+                </TabsTrigger>
                 <TabsTrigger value="indicators" className="data-[state=active]:bg-blue-600">
                   Технические индикаторы
                 </TabsTrigger>
@@ -117,6 +122,10 @@ const Index = () => {
 
               <TabsContent value="chart">
                 <PriceChart pair={selectedPair} timeframe={timeframe} />
+              </TabsContent>
+
+              <TabsContent value="forecast">
+                <WeightedPriceForecast pair={selectedPair} timeframe={timeframe} />
               </TabsContent>
 
               <TabsContent value="indicators">

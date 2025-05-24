@@ -49,15 +49,18 @@ export const useIndicatorData = (pair: string, timeframe: string) => {
   useEffect(() => {
     const generateIndicators = () => {
       const rsi = Math.random() * 100;
-      const macdValue = (Math.random() - 0.5) * 0.01;
-      const macdSignal = (Math.random() - 0.5) * 0.01;
+      const volatilityMultiplier = pair === "BTC/USD" ? 2 : 1; // BTC более волатилен
+      const macdValue = (Math.random() - 0.5) * 0.01 * volatilityMultiplier;
+      const macdSignal = (Math.random() - 0.5) * 0.01 * volatilityMultiplier;
       
       const basePrice = pair === "EUR/USD" ? 1.0850 : 
                        pair === "GBP/USD" ? 1.2650 :
-                       pair === "USD/JPY" ? 149.50 : 1.0950;
+                       pair === "USD/JPY" ? 149.50 : 
+                       pair === "BTC/USD" ? 67500 : 1.0950;
 
-      const ma20 = basePrice + (Math.random() - 0.5) * 0.02;
-      const ma50 = basePrice + (Math.random() - 0.5) * 0.03;
+      const priceVariation = pair === "BTC/USD" ? 2000 : 0.02;
+      const ma20 = basePrice + (Math.random() - 0.5) * priceVariation;
+      const ma50 = basePrice + (Math.random() - 0.5) * priceVariation * 1.5;
 
       setIndicators({
         rsi,
@@ -69,9 +72,9 @@ export const useIndicatorData = (pair: string, timeframe: string) => {
         ma20,
         ma50,
         bollingerBands: {
-          upper: basePrice + 0.02,
+          upper: basePrice + priceVariation,
           middle: basePrice,
-          lower: basePrice - 0.02
+          lower: basePrice - priceVariation
         },
         stochastic: {
           k: Math.random() * 100,
@@ -83,9 +86,9 @@ export const useIndicatorData = (pair: string, timeframe: string) => {
       for (let i = 0; i < 20; i++) {
         data.push({
           time: i,
-          macd: (Math.random() - 0.5) * 0.02,
-          signal: (Math.random() - 0.5) * 0.015,
-          histogram: (Math.random() - 0.5) * 0.01
+          macd: (Math.random() - 0.5) * 0.02 * volatilityMultiplier,
+          signal: (Math.random() - 0.5) * 0.015 * volatilityMultiplier,
+          histogram: (Math.random() - 0.5) * 0.01 * volatilityMultiplier
         });
       }
       setIndicatorData(data);
