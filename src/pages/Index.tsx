@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +8,10 @@ import PriceChart from "@/components/PriceChart";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import TradingSignals from "@/components/TradingSignals";
 import MarketOverview from "@/components/MarketOverview";
+import MLPredictions from "@/components/MLPredictions";
+import RiskManagement from "@/components/RiskManagement";
+import AutoTradingStrategies from "@/components/AutoTradingStrategies";
+import AdvancedAnalytics from "@/components/AdvancedAnalytics";
 import { TrendingUp, TrendingDown, BarChart } from "lucide-react";
 
 const Index = () => {
@@ -98,6 +101,18 @@ const Index = () => {
                 <TabsTrigger value="signals" className="data-[state=active]:bg-blue-600">
                   Торговые сигналы
                 </TabsTrigger>
+                <TabsTrigger value="ml" className="data-[state=active]:bg-blue-600">
+                  AI Прогнозы
+                </TabsTrigger>
+                <TabsTrigger value="risk" className="data-[state=active]:bg-blue-600">
+                  Риск-менеджмент
+                </TabsTrigger>
+                <TabsTrigger value="auto" className="data-[state=active]:bg-blue-600">
+                  Автоторговля
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-blue-600">
+                  Аналитика
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="chart">
@@ -110,6 +125,22 @@ const Index = () => {
 
               <TabsContent value="signals">
                 <TradingSignals pair={selectedPair} timeframe={timeframe} />
+              </TabsContent>
+
+              <TabsContent value="ml">
+                <MLPredictions pair={selectedPair} timeframe={timeframe} />
+              </TabsContent>
+
+              <TabsContent value="risk">
+                <RiskManagement pair={selectedPair} />
+              </TabsContent>
+
+              <TabsContent value="auto">
+                <AutoTradingStrategies pair={selectedPair} timeframe={timeframe} />
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <AdvancedAnalytics pair={selectedPair} timeframe={timeframe} />
               </TabsContent>
             </Tabs>
           </div>
