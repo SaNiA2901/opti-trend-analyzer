@@ -14,6 +14,7 @@ import RiskManagement from "@/components/RiskManagement";
 import AutoTradingStrategies from "@/components/AutoTradingStrategies";
 import AdvancedAnalytics from "@/components/AdvancedAnalytics";
 import WeightedPriceForecast from "@/components/WeightedPriceForecast";
+import BinaryOptionsPredictor from "@/components/BinaryOptionsPredictor";
 import { TrendingUp, TrendingDown, BarChart } from "lucide-react";
 
 const Index = () => {
