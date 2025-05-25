@@ -100,6 +100,9 @@ const Index = () => {
                 <TabsTrigger value="forecast" className="data-[state=active]:bg-blue-600">
                   Прогноз цены
                 </TabsTrigger>
+                <TabsTrigger value="binary" className="data-[state=active]:bg-blue-600">
+                  Бинарные опционы
+                </TabsTrigger>
                 <TabsTrigger value="indicators" className="data-[state=active]:bg-blue-600">
                   Технические индикаторы
                 </TabsTrigger>
@@ -126,6 +129,10 @@ const Index = () => {
 
               <TabsContent value="forecast">
                 <WeightedPriceForecast pair={selectedPair} timeframe={timeframe} />
+              </TabsContent>
+
+              <TabsContent value="binary">
+                <BinaryOptionsPredictor pair={selectedPair} timeframe={timeframe} />
               </TabsContent>
 
               <TabsContent value="indicators">
