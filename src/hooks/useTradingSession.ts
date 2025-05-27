@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -70,9 +69,11 @@ export const useTradingSession = () => {
 
       if (error) throw error;
       
+      // Устанавливаем созданную сессию как текущую
       setCurrentSession(data);
       setCandles([]);
       await loadSessions();
+      console.log('Created and set current session:', data);
       return data;
     } catch (error) {
       console.error('Error creating session:', error);
@@ -102,8 +103,11 @@ export const useTradingSession = () => {
 
       if (candlesError) throw candlesError;
 
+      // Устанавливаем загруженную сессию как текущую
       setCurrentSession(sessionData);
       setCandles(candlesData || []);
+      console.log('Loaded and set current session:', sessionData);
+      console.log('Loaded candles:', candlesData);
     } catch (error) {
       console.error('Error loading session:', error);
       throw error;
