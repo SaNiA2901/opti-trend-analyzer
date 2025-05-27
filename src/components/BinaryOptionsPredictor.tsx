@@ -2,31 +2,22 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Target, Database } from "lucide-react";
-import ManualDataInput from "./predictor/ManualDataInput";
 import PredictionSettings from "./predictor/PredictionSettings";
 import PredictionResults from "./predictor/PredictionResults";
+import SessionManager from "./session/SessionManager";
+import CandleInput from "./session/CandleInput";
+import { useTradingSession } from "@/hooks/useTradingSession";
 
 interface BinaryOptionsPredictorProps {
   pair: string;
   timeframe: string;
 }
 
-export interface ManualDataInputs {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  date: string;
-  time: string;
-}
-
 export interface PredictionConfig {
   predictionInterval: number;
-  analysisMode: 'manual';
+  analysisMode: 'session';
 }
 
 export interface PredictionResult {
@@ -44,44 +35,22 @@ export interface PredictionResult {
 }
 
 const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
-  const [manualData, setManualData] = useState<ManualDataInputs>({
-    open: 0,
-    high: 0,
-    low: 0,
-    close: 0,
-    volume: 0,
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5)
-  });
+  const { currentSession, candles, saveCandle } = useTradingSession();
   const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
     predictionInterval: 5,
-    analysisMode: 'manual'
+    analysisMode: 'session'
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
-  const validateManualData = () => {
-    return manualData.open > 0 && 
-           manualData.high > 0 && 
-           manualData.low > 0 && 
-           manualData.close > 0 && 
-           manualData.volume > 0 &&
-           manualData.high >= Math.max(manualData.open, manualData.close) &&
-           manualData.low <= Math.min(manualData.open, manualData.close);
-  };
-
-  const generatePrediction = async () => {
-    if (!validateManualData()) {
-      return;
-    }
-
+  const generatePrediction = async (candleData: any) => {
     setIsGenerating(true);
     
-    // Анализ пользовательских данных
     setTimeout(() => {
-      const { open, high, low, close, volume } = manualData;
+      const { open, high, low, close, volume } = candleData;
       
-      // Технический анализ на основе введенных данных
+      // Технический анализ на основе данных свечи
       const priceRange = high - low;
       const bodySize = Math.abs(close - open);
       const upperShadow = high - Math.max(open, close);
@@ -93,7 +62,7 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       const isDoji = bodySize < priceRange * 0.1;
       
       // Анализ объема
-      const volumeFactor = Math.min(100, (volume / 1000) * 20); // Нормализация объема
+      const volumeFactor = Math.min(100, (volume / 1000) * 20);
       
       // Технические факторы
       const technicalFactor = isBullish ? 
@@ -138,17 +107,28 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
       setPredictionResult(result);
       setIsGenerating(false);
+
+      // Сохраняем прогноз в базу данных
+      if (currentSession && candleData.candle_index !== undefined) {
+        saveCandle({
+          session_id: currentSession.id,
+          candle_index: candleData.candle_index,
+          open: candleData.open,
+          high: candleData.high,
+          low: candleData.low,
+          close: candleData.close,
+          volume: candleData.volume,
+          prediction_direction: direction,
+          prediction_probability: probability,
+          prediction_confidence: confidence
+        });
+      }
     }, 1500);
   };
 
-  // Автоматическая генерация прогноза при изменении данных
-  useEffect(() => {
-    if (validateManualData() && !isGenerating) {
-      generatePrediction();
-    } else if (!validateManualData()) {
-      setPredictionResult(null);
-    }
-  }, [manualData, predictionConfig.predictionInterval]);
+  const handleCandleSaved = (candleData: any) => {
+    generatePrediction(candleData);
+  };
 
   return (
     <div className="space-y-6">
@@ -156,26 +136,33 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       <Card className="p-6 bg-slate-800/50 border-slate-700">
         <div className="flex items-center space-x-3 mb-4">
           <Database className="h-6 w-6 text-blue-400" />
-          <h3 className="text-xl font-semibold text-white">Автоматический анализ данных</h3>
-          <Badge className="bg-green-600 text-white">Авто-прогнозы</Badge>
+          <h3 className="text-xl font-semibold text-white">Система торговых сессий</h3>
+          <Badge className="bg-green-600 text-white">Реальное время</Badge>
         </div>
         
         <div className="bg-slate-700/50 rounded-lg p-4">
           <ul className="text-slate-300 text-sm space-y-2">
-            <li>• Прогноз генерируется автоматически при вводе всех данных OHLC</li>
-            <li>• Анализ основан исключительно на ваших данных свечи</li>
-            <li>• Техническое определение паттернов свечного анализа</li>
-            <li>• Мгновенные рекомендации для бинарных опционов</li>
+            <li>• Создавайте сессии с автоматическим расчетом времени свечей</li>
+            <li>• Каждая свеча сохраняется в базе данных в реальном времени</li>
+            <li>• Возможность продолжить работу с любого места после сбоя</li>
+            <li>• Автоматические прогнозы для каждой введенной свечи</li>
           </ul>
         </div>
       </Card>
 
-      {/* Ввод данных */}
-      <ManualDataInput 
-        data={manualData}
-        onChange={setManualData}
-        pair={pair}
+      {/* Управление сессиями */}
+      <SessionManager 
+        pair={pair} 
+        onSessionSelected={setSelectedSessionId}
       />
+
+      {/* Ввод данных свечи */}
+      {currentSession && (
+        <CandleInput 
+          pair={pair}
+          onCandleSaved={handleCandleSaved}
+        />
+      )}
 
       {/* Настройки прогноза */}
       <PredictionSettings 
@@ -189,22 +176,10 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
               <Clock className="h-5 w-5 text-blue-400 animate-spin" />
-              <span className="text-white">Автоматический анализ данных...</span>
+              <span className="text-white">Генерация прогноза...</span>
             </div>
             <Progress value={75} className="mb-2" />
-            <p className="text-slate-400 text-sm">Генерация прогноза на основе введенных данных</p>
-          </div>
-        </Card>
-      )}
-
-      {/* Статус валидации */}
-      {!validateManualData() && !isGenerating && (
-        <Card className="p-4 bg-orange-600/20 border-orange-600/50">
-          <div className="flex items-center space-x-2">
-            <Target className="h-4 w-4 text-orange-400" />
-            <p className="text-orange-200 text-sm">
-              Заполните все поля OHLC и объем для автоматического анализа
-            </p>
+            <p className="text-slate-400 text-sm">Анализ данных свечи и создание рекомендации</p>
           </div>
         </Card>
       )}
@@ -215,6 +190,37 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           result={predictionResult}
           pair={pair}
         />
+      )}
+
+      {/* История свечей */}
+      {candles.length > 0 && (
+        <Card className="p-6 bg-slate-800/50 border-slate-700">
+          <h4 className="text-lg font-medium text-white mb-4">История свечей текущей сессии</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {candles.slice(-6).map((candle, index) => (
+              <div key={candle.id || index} className="bg-slate-700/50 rounded-lg p-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-400">Свеча #{candle.candle_index + 1}</span>
+                  {candle.prediction_direction && (
+                    <Badge className={candle.prediction_direction === 'UP' ? 'bg-green-600' : 'bg-red-600'}>
+                      {candle.prediction_direction}
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-xs text-slate-300 space-y-1">
+                  <div>O: {candle.open} | H: {candle.high}</div>
+                  <div>L: {candle.low} | C: {candle.close}</div>
+                  <div>V: {candle.volume}</div>
+                  {candle.prediction_probability && (
+                    <div className="text-blue-300">
+                      Вероятность: {candle.prediction_probability.toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   );
