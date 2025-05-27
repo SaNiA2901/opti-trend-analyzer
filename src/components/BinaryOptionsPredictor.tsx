@@ -20,6 +20,16 @@ export interface PredictionConfig {
   analysisMode: 'session';
 }
 
+export interface ManualDataInputs {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  date: string;
+  time: string;
+}
+
 export interface PredictionResult {
   direction: 'UP' | 'DOWN';
   probability: number;
