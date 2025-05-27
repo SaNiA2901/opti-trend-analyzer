@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
   const generatePrediction = async () => {
     if (!validateManualData()) {
-      alert("Пожалуйста, введите корректные данные OHLC. Убедитесь что High >= max(Open, Close) и Low <= min(Open, Close)");
       return;
     }
 
@@ -142,22 +141,31 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     }, 1500);
   };
 
+  // Автоматическая генерация прогноза при изменении данных
+  useEffect(() => {
+    if (validateManualData() && !isGenerating) {
+      generatePrediction();
+    } else if (!validateManualData()) {
+      setPredictionResult(null);
+    }
+  }, [manualData, predictionConfig.predictionInterval]);
+
   return (
     <div className="space-y-6">
       {/* Информация о режиме */}
       <Card className="p-6 bg-slate-800/50 border-slate-700">
         <div className="flex items-center space-x-3 mb-4">
           <Database className="h-6 w-6 text-blue-400" />
-          <h3 className="text-xl font-semibold text-white">Ручной анализ данных</h3>
-          <Badge className="bg-blue-600 text-white">Только пользовательские данные</Badge>
+          <h3 className="text-xl font-semibold text-white">Автоматический анализ данных</h3>
+          <Badge className="bg-green-600 text-white">Авто-прогнозы</Badge>
         </div>
         
         <div className="bg-slate-700/50 rounded-lg p-4">
           <ul className="text-slate-300 text-sm space-y-2">
-            <li>• Анализ основан исключительно на ваших данных OHLC и объеме</li>
-            <li>• Система накапливает введенные данные для улучшения прогнозов</li>
+            <li>• Прогноз генерируется автоматически при вводе всех данных OHLC</li>
+            <li>• Анализ основан исключительно на ваших данных свечи</li>
             <li>• Техническое определение паттернов свечного анализа</li>
-            <li>• Расчет направления движения для бинарных опционов</li>
+            <li>• Мгновенные рекомендации для бинарных опционов</li>
           </ul>
         </div>
       </Card>
@@ -175,44 +183,34 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         onChange={setPredictionConfig}
       />
 
-      {/* Кнопка генерации прогноза */}
-      <Card className="p-6 bg-slate-800/50 border-slate-700">
-        <div className="text-center">
-          <Button 
-            onClick={generatePrediction}
-            disabled={isGenerating || !validateManualData()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg disabled:bg-slate-600"
-          >
-            {isGenerating ? (
-              <>
-                <Clock className="h-5 w-5 mr-2 animate-spin" />
-                Анализ данных...
-              </>
-            ) : (
-              <>
-                <Target className="h-5 w-5 mr-2" />
-                Проанализировать данные
-              </>
-            )}
-          </Button>
-          
-          {!validateManualData() && !isGenerating && (
-            <p className="text-orange-400 text-sm mt-2">
-              Заполните все поля OHLC и объем для анализа
-            </p>
-          )}
-          
-          {isGenerating && (
-            <div className="mt-4">
-              <Progress value={75} className="mb-2" />
-              <p className="text-slate-400 text-sm">Анализ пользовательских данных и генерация прогноза...</p>
+      {/* Индикатор обработки */}
+      {isGenerating && (
+        <Card className="p-6 bg-slate-800/50 border-slate-700">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Clock className="h-5 w-5 text-blue-400 animate-spin" />
+              <span className="text-white">Автоматический анализ данных...</span>
             </div>
-          )}
-        </div>
-      </Card>
+            <Progress value={75} className="mb-2" />
+            <p className="text-slate-400 text-sm">Генерация прогноза на основе введенных данных</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Статус валидации */}
+      {!validateManualData() && !isGenerating && (
+        <Card className="p-4 bg-orange-600/20 border-orange-600/50">
+          <div className="flex items-center space-x-2">
+            <Target className="h-4 w-4 text-orange-400" />
+            <p className="text-orange-200 text-sm">
+              Заполните все поля OHLC и объем для автоматического анализа
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* Результаты прогноза */}
-      {predictionResult && (
+      {predictionResult && !isGenerating && (
         <PredictionResults 
           result={predictionResult}
           pair={pair}
