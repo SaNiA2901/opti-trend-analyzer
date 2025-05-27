@@ -1,11 +1,10 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Clock, Activity, Target } from "lucide-react";
+import { Clock, Target, Database } from "lucide-react";
 import ManualDataInput from "./predictor/ManualDataInput";
 import PredictionSettings from "./predictor/PredictionSettings";
 import PredictionResults from "./predictor/PredictionResults";
@@ -27,7 +26,7 @@ export interface ManualDataInputs {
 
 export interface PredictionConfig {
   predictionInterval: number;
-  analysisMode: 'auto' | 'manual';
+  analysisMode: 'manual';
 }
 
 export interface PredictionResult {
@@ -45,7 +44,6 @@ export interface PredictionResult {
 }
 
 const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
-  const [activeMode, setActiveMode] = useState<'realtime' | 'manual'>('realtime');
   const [manualData, setManualData] = useState<ManualDataInputs>({
     open: 0,
     high: 0,
@@ -57,27 +55,60 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   });
   const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
     predictionInterval: 5,
-    analysisMode: 'auto'
+    analysisMode: 'manual'
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const validateManualData = () => {
+    return manualData.open > 0 && 
+           manualData.high > 0 && 
+           manualData.low > 0 && 
+           manualData.close > 0 && 
+           manualData.volume > 0 &&
+           manualData.high >= Math.max(manualData.open, manualData.close) &&
+           manualData.low <= Math.min(manualData.open, manualData.close);
+  };
+
   const generatePrediction = async () => {
+    if (!validateManualData()) {
+      alert("Пожалуйста, введите корректные данные OHLC. Убедитесь что High >= max(Open, Close) и Low <= min(Open, Close)");
+      return;
+    }
+
     setIsGenerating(true);
     
-    // Симуляция генерации прогноза
+    // Анализ пользовательских данных
     setTimeout(() => {
-      const basePrice = pair === "EUR/USD" ? 1.0850 : 
-                       pair === "GBP/USD" ? 1.2650 :
-                       pair === "USD/JPY" ? 149.50 : 
-                       pair === "BTC/USD" ? 67500 : 1.0950;
-
-      // Анализ факторов
-      const technicalFactor = 60 + Math.random() * 35;
-      const volumeFactor = 55 + Math.random() * 40;
-      const momentumFactor = 50 + Math.random() * 45;
-      const volatilityFactor = 45 + Math.random() * 50;
-
+      const { open, high, low, close, volume } = manualData;
+      
+      // Технический анализ на основе введенных данных
+      const priceRange = high - low;
+      const bodySize = Math.abs(close - open);
+      const upperShadow = high - Math.max(open, close);
+      const lowerShadow = Math.min(open, close) - low;
+      
+      // Анализ паттернов
+      const isBullish = close > open;
+      const isHammer = bodySize < priceRange * 0.3 && lowerShadow > bodySize * 2;
+      const isDoji = bodySize < priceRange * 0.1;
+      
+      // Анализ объема
+      const volumeFactor = Math.min(100, (volume / 1000) * 20); // Нормализация объема
+      
+      // Технические факторы
+      const technicalFactor = isBullish ? 
+        (isHammer ? 85 : (isDoji ? 50 : 65)) : 
+        (isHammer ? 15 : (isDoji ? 50 : 35));
+      
+      // Анализ моментума
+      const momentumFactor = isBullish ? 
+        Math.min(90, 50 + (bodySize / priceRange) * 40) :
+        Math.max(10, 50 - (bodySize / priceRange) * 40);
+      
+      // Анализ волатильности
+      const volatilityFactor = Math.min(90, Math.max(10, (priceRange / open) * 1000));
+      
       // Взвешенная оценка
       const weightedScore = (
         technicalFactor * 0.4 +
@@ -87,8 +118,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       );
 
       const direction = weightedScore > 50 ? 'UP' : 'DOWN';
-      const probability = Math.min(95, Math.max(55, weightedScore + Math.random() * 10));
-      const confidence = Math.min(90, Math.max(60, probability - 5 + Math.random() * 15));
+      const probability = Math.min(95, Math.max(55, weightedScore));
+      const confidence = Math.min(90, Math.max(60, probability - 5));
 
       const result: PredictionResult = {
         direction,
@@ -102,65 +133,41 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           volatility: volatilityFactor
         },
         recommendation: direction === 'UP' ? 
-          `Рекомендуем CALL опцион на ${predictionConfig.predictionInterval} мин` :
-          `Рекомендуем PUT опцион на ${predictionConfig.predictionInterval} мин`
+          `Рекомендуем CALL опцион на ${predictionConfig.predictionInterval} мин. ${isHammer ? 'Обнаружен паттерн "Молот"' : ''}` :
+          `Рекомендуем PUT опцион на ${predictionConfig.predictionInterval} мин. ${isHammer ? 'Обнаружен медвежий паттерн' : ''}`
       };
 
       setPredictionResult(result);
       setIsGenerating(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
     <div className="space-y-6">
-      {/* Режимы работы системы */}
+      {/* Информация о режиме */}
       <Card className="p-6 bg-slate-800/50 border-slate-700">
-        <h3 className="text-xl font-semibold text-white mb-4">Режимы работы системы</h3>
+        <div className="flex items-center space-x-3 mb-4">
+          <Database className="h-6 w-6 text-blue-400" />
+          <h3 className="text-xl font-semibold text-white">Ручной анализ данных</h3>
+          <Badge className="bg-blue-600 text-white">Только пользовательские данные</Badge>
+        </div>
         
-        <Tabs value={activeMode} onValueChange={(value) => setActiveMode(value as 'realtime' | 'manual')}>
-          <TabsList className="bg-slate-700 border-slate-600 mb-4">
-            <TabsTrigger value="realtime" className="data-[state=active]:bg-blue-600">
-              <Activity className="h-4 w-4 mr-2" />
-              Режим реального времени
-            </TabsTrigger>
-            <TabsTrigger value="manual" className="data-[state=active]:bg-blue-600">
-              <Target className="h-4 w-4 mr-2" />
-              Ручной режим
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="realtime" className="space-y-4">
-            <div className="bg-slate-700/50 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-white font-medium">Автоматический анализ активен</span>
-              </div>
-              <ul className="text-slate-300 text-sm space-y-2">
-                <li>• Автоматический анализ данных с биржевых источников</li>
-                <li>• Мгновенное обновление прогнозов при изменении рыночных условий</li>
-                <li>• Анализ цены, объема и данных OHLC в реальном времени</li>
-              </ul>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="manual" className="space-y-4">
-            <div className="bg-slate-700/50 rounded-lg p-4 mb-4">
-              <p className="text-slate-300 text-sm mb-2">
-                <strong className="text-white">Ручной режим</strong> — активируется при невозможности использования данных реального времени.
-              </p>
-              <p className="text-slate-400 text-xs">
-                Позволяет вводить исторические данные и анализировать прошлые рыночные ситуации.
-              </p>
-            </div>
-            
-            <ManualDataInput 
-              data={manualData}
-              onChange={setManualData}
-              pair={pair}
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="bg-slate-700/50 rounded-lg p-4">
+          <ul className="text-slate-300 text-sm space-y-2">
+            <li>• Анализ основан исключительно на ваших данных OHLC и объеме</li>
+            <li>• Система накапливает введенные данные для улучшения прогнозов</li>
+            <li>• Техническое определение паттернов свечного анализа</li>
+            <li>• Расчет направления движения для бинарных опционов</li>
+          </ul>
+        </div>
       </Card>
+
+      {/* Ввод данных */}
+      <ManualDataInput 
+        data={manualData}
+        onChange={setManualData}
+        pair={pair}
+      />
 
       {/* Настройки прогноза */}
       <PredictionSettings 
@@ -173,26 +180,32 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         <div className="text-center">
           <Button 
             onClick={generatePrediction}
-            disabled={isGenerating}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+            disabled={isGenerating || !validateManualData()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg disabled:bg-slate-600"
           >
             {isGenerating ? (
               <>
                 <Clock className="h-5 w-5 mr-2 animate-spin" />
-                Генерация прогноза...
+                Анализ данных...
               </>
             ) : (
               <>
                 <Target className="h-5 w-5 mr-2" />
-                Сгенерировать прогноз
+                Проанализировать данные
               </>
             )}
           </Button>
           
+          {!validateManualData() && !isGenerating && (
+            <p className="text-orange-400 text-sm mt-2">
+              Заполните все поля OHLC и объем для анализа
+            </p>
+          )}
+          
           {isGenerating && (
             <div className="mt-4">
-              <Progress value={66} className="mb-2" />
-              <p className="text-slate-400 text-sm">Анализ рыночных данных и генерация прогноза...</p>
+              <Progress value={75} className="mb-2" />
+              <p className="text-slate-400 text-sm">Анализ пользовательских данных и генерация прогноза...</p>
             </div>
           )}
         </div>

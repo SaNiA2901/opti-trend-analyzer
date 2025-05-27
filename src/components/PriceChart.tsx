@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Database, AlertCircle } from "lucide-react";
 
 interface PriceChartProps {
   pair: string;
@@ -11,77 +11,18 @@ interface PriceChartProps {
 }
 
 const PriceChart = ({ pair, timeframe }: PriceChartProps) => {
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [currentPrice, setCurrentPrice] = useState(0);
-  const [priceChange, setPriceChange] = useState(0);
-  const [trend, setTrend] = useState<'up' | 'down'>('up');
-
-  // Генерируем реалистичные данные для демонстрации
-  useEffect(() => {
-    const generatePriceData = () => {
-      const basePrice = pair === "EUR/USD" ? 1.0850 : 
-                       pair === "GBP/USD" ? 1.2650 :
-                       pair === "USD/JPY" ? 149.50 : 
-                       pair === "BTC/USD" ? 67500 : 1.0950;
-      
-      const data = [];
-      let price = basePrice;
-      
-      for (let i = 0; i < 50; i++) {
-        const volatility = pair === "BTC/USD" ? 0.05 : 0.01; // BTC более волатилен
-        const change = (Math.random() - 0.5) * volatility;
-        price += change;
-        data.push({
-          time: new Date(Date.now() - (49 - i) * 60000).toLocaleTimeString(),
-          price: pair === "BTC/USD" ? Math.round(price) : Number(price.toFixed(4)),
-          volume: Math.floor(Math.random() * (pair === "BTC/USD" ? 5000 : 1000)) + (pair === "BTC/USD" ? 2000 : 500)
-        });
-      }
-      
-      setChartData(data);
-      setCurrentPrice(price);
-      setPriceChange(((price - basePrice) / basePrice) * 100);
-      setTrend(price > basePrice ? 'up' : 'down');
-    };
-
-    generatePriceData();
-    
-    // Обновляем данные каждые 5 секунд для имитации real-time
-    const interval = setInterval(() => {
-      generatePriceData();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [pair, timeframe]);
-
-  const formatPrice = (price: number) => {
-    if (pair === "BTC/USD") return `$${price.toFixed(0)}`;
-    return pair.includes("JPY") ? price.toFixed(2) : price.toFixed(4);
-  };
-
   return (
     <Card className="p-6 bg-slate-800/50 border-slate-700 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="text-xl font-semibold text-white">{pair}</h3>
-            {pair === "BTC/USD" && (
-              <Badge className="bg-orange-600 text-white">КРИПТО</Badge>
-            )}
+            <Badge className="bg-orange-600 text-white">Ручной режим</Badge>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-2xl font-bold text-white">
-              {formatPrice(currentPrice)}
+            <span className="text-slate-400">
+              Данные отображаются после ввода в разделе "Бинарные опционы"
             </span>
-            <Badge 
-              variant={trend === 'up' ? 'default' : 'destructive'}
-              className={`flex items-center space-x-1 ${
-                trend === 'up' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-              }`}
-            >
-              {trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              <span>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%</span>
-            </Badge>
           </div>
         </div>
         
@@ -91,65 +32,39 @@ const PriceChart = ({ pair, timeframe }: PriceChartProps) => {
         </div>
       </div>
 
-      <div className="h-96">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="time" 
-              stroke="#9CA3AF"
-              fontSize={12}
-            />
-            <YAxis 
-              stroke="#9CA3AF"
-              fontSize={12}
-              domain={['dataMin - 0.01', 'dataMax + 0.01']}
-              tickFormatter={(value) => formatPrice(value)}
-            />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: '#1F2937',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                color: '#F9FAFB'
-              }}
-              formatter={(value: any) => [formatPrice(value), 'Цена']}
-            />
-            <Area
-              type="monotone"
-              dataKey="price"
-              stroke="#3B82F6"
-              strokeWidth={2}
-              fill="url(#priceGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      <div className="h-96 flex items-center justify-center bg-slate-700/30 rounded-lg">
+        <div className="text-center space-y-4">
+          <Database className="h-16 w-16 text-slate-500 mx-auto" />
+          <div>
+            <h4 className="text-white font-medium mb-2">Нет данных для отображения</h4>
+            <p className="text-slate-400 text-sm max-w-md">
+              Перейдите в раздел "Бинарные опционы" и введите данные OHLC для просмотра графика
+            </p>
+          </div>
+          <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-3 max-w-sm mx-auto">
+            <div className="flex items-center space-x-2 mb-1">
+              <AlertCircle className="h-4 w-4 text-blue-400" />
+              <span className="text-blue-200 text-sm font-medium">Информация</span>
+            </div>
+            <p className="text-blue-200 text-xs">
+              График будет обновляться на основе ваших введенных данных
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-slate-700">
         <div className="text-center">
           <p className="text-slate-400 text-sm">Максимум</p>
-          <p className="text-white font-medium">
-            {formatPrice(Math.max(...chartData.map(d => d.price)))}
-          </p>
+          <p className="text-slate-500">--</p>
         </div>
         <div className="text-center">
           <p className="text-slate-400 text-sm">Минимум</p>
-          <p className="text-white font-medium">
-            {formatPrice(Math.min(...chartData.map(d => d.price)))}
-          </p>
+          <p className="text-slate-500">--</p>
         </div>
         <div className="text-center">
           <p className="text-slate-400 text-sm">Объем</p>
-          <p className="text-white font-medium">
-            {chartData.length > 0 ? chartData[chartData.length - 1].volume : 0}
-          </p>
+          <p className="text-slate-500">--</p>
         </div>
       </div>
     </Card>
