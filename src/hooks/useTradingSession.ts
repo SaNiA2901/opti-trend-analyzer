@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,7 +35,6 @@ export const useTradingSession = () => {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Загрузка всех сессий
   const loadSessions = async () => {
     setIsLoading(true);
     try {
@@ -45,6 +45,7 @@ export const useTradingSession = () => {
 
       if (error) throw error;
       setSessions(data || []);
+      console.log('Sessions loaded:', data?.length || 0);
     } catch (error) {
       console.error('Error loading sessions:', error);
     } finally {
@@ -52,7 +53,6 @@ export const useTradingSession = () => {
     }
   };
 
-  // Создание новой сессии
   const createSession = async (sessionData: {
     session_name: string;
     pair: string;
@@ -60,32 +60,43 @@ export const useTradingSession = () => {
     start_date: string;
     start_time: string;
   }) => {
+    if (!sessionData.session_name?.trim()) {
+      throw new Error('Session name is required');
+    }
+
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('trading_sessions')
-        .insert([sessionData])
+        .insert([{
+          ...sessionData,
+          current_candle_index: 0
+        }])
         .select()
         .single();
 
       if (error) throw error;
       
-      // Устанавливаем созданную сессию как текущую
       setCurrentSession(data);
       setCandles([]);
       await loadSessions();
-      console.log('Created and set current session:', data);
+      console.log('Session created and set as current:', data);
       return data;
     } catch (error) {
       console.error('Error creating session:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Загрузка сессии
   const loadSession = async (sessionId: string) => {
+    if (!sessionId) {
+      throw new Error('Session ID is required');
+    }
+
     setIsLoading(true);
     try {
-      // Загружаем информацию о сессии
       const { data: sessionData, error: sessionError } = await supabase
         .from('trading_sessions')
         .select('*')
@@ -94,7 +105,6 @@ export const useTradingSession = () => {
 
       if (sessionError) throw sessionError;
 
-      // Загружаем свечи для этой сессии
       const { data: candlesData, error: candlesError } = await supabase
         .from('candle_data')
         .select('*')
@@ -103,11 +113,10 @@ export const useTradingSession = () => {
 
       if (candlesError) throw candlesError;
 
-      // Устанавливаем загруженную сессию как текущую
       setCurrentSession(sessionData);
       setCandles(candlesData || []);
-      console.log('Loaded and set current session:', sessionData);
-      console.log('Loaded candles:', candlesData);
+      console.log('Session loaded:', sessionData);
+      console.log('Candles loaded:', candlesData?.length || 0);
     } catch (error) {
       console.error('Error loading session:', error);
       throw error;
@@ -116,9 +125,16 @@ export const useTradingSession = () => {
     }
   };
 
-  // Функция для расчета времени свечи
   const calculateCandleTime = (startDate: string, startTime: string, timeframe: string, candleIndex: number): string => {
+    if (!startDate || !startTime || !timeframe || candleIndex < 0) {
+      throw new Error('Invalid parameters for candle time calculation');
+    }
+
     const startDateTime = new Date(`${startDate}T${startTime}`);
+    
+    if (isNaN(startDateTime.getTime())) {
+      throw new Error('Invalid start date/time format');
+    }
     
     const timeframeMinutes: { [key: string]: number } = {
       '1m': 1,
@@ -130,15 +146,45 @@ export const useTradingSession = () => {
       '1d': 1440
     };
 
-    const minutes = timeframeMinutes[timeframe] || 60;
+    const minutes = timeframeMinutes[timeframe];
+    if (!minutes) {
+      throw new Error(`Unsupported timeframe: ${timeframe}`);
+    }
+
     const candleTime = new Date(startDateTime.getTime() + (candleIndex * minutes * 60 * 1000));
-    
     return candleTime.toISOString();
   };
 
-  // Сохранение свечи
+  const validateCandleData = (candleData: Omit<CandleData, 'id' | 'candle_datetime'>): string[] => {
+    const errors: string[] = [];
+    
+    if (!candleData.session_id) errors.push('Session ID is required');
+    if (candleData.candle_index < 0) errors.push('Candle index must be non-negative');
+    if (candleData.open <= 0) errors.push('Open price must be positive');
+    if (candleData.high <= 0) errors.push('High price must be positive');
+    if (candleData.low <= 0) errors.push('Low price must be positive');
+    if (candleData.close <= 0) errors.push('Close price must be positive');
+    if (candleData.volume < 0) errors.push('Volume must be non-negative');
+    
+    if (candleData.high < Math.max(candleData.open, candleData.close)) {
+      errors.push('High must be >= max(open, close)');
+    }
+    if (candleData.low > Math.min(candleData.open, candleData.close)) {
+      errors.push('Low must be <= min(open, close)');
+    }
+    
+    return errors;
+  };
+
   const saveCandle = async (candleData: Omit<CandleData, 'id' | 'candle_datetime'>) => {
-    if (!currentSession) return;
+    if (!currentSession) {
+      throw new Error('No active session');
+    }
+
+    const validationErrors = validateCandleData(candleData);
+    if (validationErrors.length > 0) {
+      throw new Error(`Validation errors: ${validationErrors.join(', ')}`);
+    }
 
     try {
       const candleDateTime = calculateCandleTime(
@@ -153,7 +199,6 @@ export const useTradingSession = () => {
         candle_datetime: candleDateTime
       };
 
-      // Сохраняем или обновляем свечу
       const { data, error } = await supabase
         .from('candle_data')
         .upsert([fullCandleData], { 
@@ -165,23 +210,26 @@ export const useTradingSession = () => {
 
       if (error) throw error;
 
-      // Обновляем текущий индекс свечи в сессии
-      await supabase
+      const newCandleIndex = Math.max(currentSession.current_candle_index, candleData.candle_index);
+      
+      const { error: updateError } = await supabase
         .from('trading_sessions')
-        .update({ current_candle_index: Math.max(currentSession.current_candle_index, candleData.candle_index) })
+        .update({ current_candle_index: newCandleIndex })
         .eq('id', currentSession.id);
 
-      // Обновляем локальное состояние
+      if (updateError) throw updateError;
+
       setCandles(prev => {
-        const updated = prev.filter(c => c.candle_index !== candleData.candle_index);
-        return [...updated, data].sort((a, b) => a.candle_index - b.candle_index);
+        const filtered = prev.filter(c => c.candle_index !== candleData.candle_index);
+        return [...filtered, data].sort((a, b) => a.candle_index - b.candle_index);
       });
 
       setCurrentSession(prev => prev ? {
         ...prev,
-        current_candle_index: Math.max(prev.current_candle_index, candleData.candle_index)
+        current_candle_index: newCandleIndex
       } : null);
 
+      console.log('Candle saved successfully:', data);
       return data;
     } catch (error) {
       console.error('Error saving candle:', error);
@@ -189,16 +237,20 @@ export const useTradingSession = () => {
     }
   };
 
-  // Получение следующего времени свечи
   const getNextCandleTime = (candleIndex: number): string => {
     if (!currentSession) return '';
     
-    return calculateCandleTime(
-      currentSession.start_date,
-      currentSession.start_time,
-      currentSession.timeframe,
-      candleIndex
-    );
+    try {
+      return calculateCandleTime(
+        currentSession.start_date,
+        currentSession.start_time,
+        currentSession.timeframe,
+        candleIndex
+      );
+    } catch (error) {
+      console.error('Error calculating next candle time:', error);
+      return '';
+    }
   };
 
   useEffect(() => {

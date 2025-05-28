@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import PriceChart from "@/components/PriceChart";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import TradingSignals from "@/components/TradingSignals";
@@ -15,7 +15,7 @@ import AutoTradingStrategies from "@/components/AutoTradingStrategies";
 import AdvancedAnalytics from "@/components/AdvancedAnalytics";
 import WeightedPriceForecast from "@/components/WeightedPriceForecast";
 import BinaryOptionsPredictor from "@/components/BinaryOptionsPredictor";
-import { TrendingUp, TrendingDown, BarChart } from "lucide-react";
+import { BarChart } from "lucide-react";
 
 const Index = () => {
   const [selectedPair, setSelectedPair] = useState("EUR/USD");
@@ -38,7 +38,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
-      {/* Header */}
       <div className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -83,83 +82,84 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Market Overview */}
           <div className="lg:col-span-1">
-            <MarketOverview selectedPair={selectedPair} />
+            <ErrorBoundary>
+              <MarketOverview selectedPair={selectedPair} />
+            </ErrorBoundary>
           </div>
 
-          {/* Main Chart and Analysis */}
           <div className="lg:col-span-3">
-            <Tabs defaultValue="chart" className="space-y-6">
-              <TabsList className="bg-slate-800 border-slate-600">
-                <TabsTrigger value="chart" className="data-[state=active]:bg-blue-600">
-                  График цены
-                </TabsTrigger>
-                <TabsTrigger value="forecast" className="data-[state=active]:bg-blue-600">
-                  Прогноз цены
-                </TabsTrigger>
-                <TabsTrigger value="binary" className="data-[state=active]:bg-blue-600">
-                  Бинарные опционы
-                </TabsTrigger>
-                <TabsTrigger value="indicators" className="data-[state=active]:bg-blue-600">
-                  Технические индикаторы
-                </TabsTrigger>
-                <TabsTrigger value="signals" className="data-[state=active]:bg-blue-600">
-                  Торговые сигналы
-                </TabsTrigger>
-                <TabsTrigger value="ml" className="data-[state=active]:bg-blue-600">
-                  AI Прогнозы
-                </TabsTrigger>
-                <TabsTrigger value="risk" className="data-[state=active]:bg-blue-600">
-                  Риск-менеджмент
-                </TabsTrigger>
-                <TabsTrigger value="auto" className="data-[state=active]:bg-blue-600">
-                  Автоторговля
-                </TabsTrigger>
-                <TabsTrigger value="analytics" className="data-[state=active]:bg-blue-600">
-                  Аналитика
-                </TabsTrigger>
-              </TabsList>
+            <ErrorBoundary>
+              <Tabs defaultValue="binary" className="space-y-6">
+                <TabsList className="bg-slate-800 border-slate-600">
+                  <TabsTrigger value="binary" className="data-[state=active]:bg-blue-600">
+                    Бинарные опционы
+                  </TabsTrigger>
+                  <TabsTrigger value="chart" className="data-[state=active]:bg-blue-600">
+                    График цены
+                  </TabsTrigger>
+                  <TabsTrigger value="forecast" className="data-[state=active]:bg-blue-600">
+                    Прогноз цены
+                  </TabsTrigger>
+                  <TabsTrigger value="indicators" className="data-[state=active]:bg-blue-600">
+                    Технические индикаторы
+                  </TabsTrigger>
+                  <TabsTrigger value="signals" className="data-[state=active]:bg-blue-600">
+                    Торговые сигналы
+                  </TabsTrigger>
+                  <TabsTrigger value="ml" className="data-[state=active]:bg-blue-600">
+                    AI Прогнозы
+                  </TabsTrigger>
+                  <TabsTrigger value="risk" className="data-[state=active]:bg-blue-600">
+                    Риск-менеджмент
+                  </TabsTrigger>
+                  <TabsTrigger value="auto" className="data-[state=active]:bg-blue-600">
+                    Автоторговля
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="data-[state=active]:bg-blue-600">
+                    Аналитика
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="chart">
-                <PriceChart pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="binary">
+                  <BinaryOptionsPredictor pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="forecast">
-                <WeightedPriceForecast pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="chart">
+                  <PriceChart pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="binary">
-                <BinaryOptionsPredictor pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="forecast">
+                  <WeightedPriceForecast pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="indicators">
-                <TechnicalIndicators pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="indicators">
+                  <TechnicalIndicators pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="signals">
-                <TradingSignals pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="signals">
+                  <TradingSignals pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="ml">
-                <MLPredictions pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="ml">
+                  <MLPredictions pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="risk">
-                <RiskManagement pair={selectedPair} />
-              </TabsContent>
+                <TabsContent value="risk">
+                  <RiskManagement pair={selectedPair} />
+                </TabsContent>
 
-              <TabsContent value="auto">
-                <AutoTradingStrategies pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
+                <TabsContent value="auto">
+                  <AutoTradingStrategies pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
 
-              <TabsContent value="analytics">
-                <AdvancedAnalytics pair={selectedPair} timeframe={timeframe} />
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="analytics">
+                  <AdvancedAnalytics pair={selectedPair} timeframe={timeframe} />
+                </TabsContent>
+              </Tabs>
+            </ErrorBoundary>
           </div>
         </div>
       </div>

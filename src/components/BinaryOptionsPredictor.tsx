@@ -55,39 +55,39 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
   const generatePrediction = async (candleData: any) => {
+    if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
+      console.error('Invalid candle data for prediction:', candleData);
+      return;
+    }
+
     setIsGenerating(true);
     
-    setTimeout(() => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const { open, high, low, close, volume } = candleData;
       
-      // Технический анализ на основе данных свечи
       const priceRange = high - low;
       const bodySize = Math.abs(close - open);
       const upperShadow = high - Math.max(open, close);
       const lowerShadow = Math.min(open, close) - low;
       
-      // Анализ паттернов
       const isBullish = close > open;
       const isHammer = bodySize < priceRange * 0.3 && lowerShadow > bodySize * 2;
       const isDoji = bodySize < priceRange * 0.1;
       
-      // Анализ объема
-      const volumeFactor = Math.min(100, (volume / 1000) * 20);
+      const volumeFactor = Math.min(100, Math.max(10, (volume / 1000) * 20));
       
-      // Технические факторы
       const technicalFactor = isBullish ? 
         (isHammer ? 85 : (isDoji ? 50 : 65)) : 
         (isHammer ? 15 : (isDoji ? 50 : 35));
       
-      // Анализ моментума
       const momentumFactor = isBullish ? 
         Math.min(90, 50 + (bodySize / priceRange) * 40) :
         Math.max(10, 50 - (bodySize / priceRange) * 40);
       
-      // Анализ волатильности
       const volatilityFactor = Math.min(90, Math.max(10, (priceRange / open) * 1000));
       
-      // Взвешенная оценка
       const weightedScore = (
         technicalFactor * 0.4 +
         volumeFactor * 0.2 +
@@ -116,33 +116,46 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       };
 
       setPredictionResult(result);
-      setIsGenerating(false);
 
-      // Сохраняем прогноз в базу данных
-      if (currentSession && candleData.candle_index !== undefined) {
-        saveCandle({
-          session_id: currentSession.id,
-          candle_index: candleData.candle_index,
-          open: candleData.open,
-          high: candleData.high,
-          low: candleData.low,
-          close: candleData.close,
-          volume: candleData.volume,
-          prediction_direction: direction,
-          prediction_probability: probability,
-          prediction_confidence: confidence
-        });
+      if (currentSession && typeof candleData.candle_index === 'number') {
+        try {
+          await saveCandle({
+            session_id: currentSession.id,
+            candle_index: candleData.candle_index,
+            open: candleData.open,
+            high: candleData.high,
+            low: candleData.low,
+            close: candleData.close,
+            volume: candleData.volume,
+            prediction_direction: direction,
+            prediction_probability: probability,
+            prediction_confidence: confidence
+          });
+        } catch (error) {
+          console.error('Error saving prediction to candle:', error);
+        }
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Error generating prediction:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCandleSaved = (candleData: any) => {
-    generatePrediction(candleData);
+    if (candleData) {
+      generatePrediction(candleData);
+    }
   };
+
+  useEffect(() => {
+    if (currentSession) {
+      setSelectedSessionId(currentSession.id);
+    }
+  }, [currentSession]);
 
   return (
     <div className="space-y-6">
-      {/* Информация о режиме */}
       <Card className="p-6 bg-slate-800/50 border-slate-700">
         <div className="flex items-center space-x-3 mb-4">
           <Database className="h-6 w-6 text-blue-400" />
@@ -160,13 +173,11 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         </div>
       </Card>
 
-      {/* Управление сессиями */}
       <SessionManager 
         pair={pair} 
         onSessionSelected={setSelectedSessionId}
       />
 
-      {/* Ввод данных свечи */}
       {currentSession && (
         <CandleInput 
           pair={pair}
@@ -174,13 +185,11 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         />
       )}
 
-      {/* Настройки прогноза */}
       <PredictionSettings 
         config={predictionConfig}
         onChange={setPredictionConfig}
       />
 
-      {/* Индикатор обработки */}
       {isGenerating && (
         <Card className="p-6 bg-slate-800/50 border-slate-700">
           <div className="text-center">
@@ -194,7 +203,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         </Card>
       )}
 
-      {/* Результаты прогноза */}
       {predictionResult && !isGenerating && (
         <PredictionResults 
           result={predictionResult}
@@ -202,7 +210,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         />
       )}
 
-      {/* История свечей */}
       {candles.length > 0 && (
         <Card className="p-6 bg-slate-800/50 border-slate-700">
           <h4 className="text-lg font-medium text-white mb-4">История свечей текущей сессии</h4>
