@@ -2,7 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PredictionResult } from "../BinaryOptionsPredictor";
+import { PredictionResult } from "@/types/trading";
 import { TrendingUp, TrendingDown, Target, Clock, BarChart } from "lucide-react";
 
 interface PredictionResultsProps {

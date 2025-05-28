@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PredictionConfig } from "../BinaryOptionsPredictor";
+import { PredictionConfig } from "@/types/trading";
 import { Settings, Clock } from "lucide-react";
 
 interface PredictionSettingsProps {
