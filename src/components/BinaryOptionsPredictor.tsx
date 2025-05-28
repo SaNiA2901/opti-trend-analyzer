@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +51,7 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [sessionSelected, setSessionSelected] = useState(false);
 
   const generatePrediction = async (candleData: any) => {
     if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
@@ -148,9 +147,17 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     }
   };
 
+  const handleSessionSelected = (sessionId: string) => {
+    console.log('Session selected in BinaryOptionsPredictor:', sessionId);
+    setSessionSelected(true);
+  };
+
   useEffect(() => {
     if (currentSession) {
-      setSelectedSessionId(currentSession.id);
+      console.log('Current session updated:', currentSession);
+      setSessionSelected(true);
+    } else {
+      setSessionSelected(false);
     }
   }, [currentSession]);
 
@@ -160,7 +167,11 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         <div className="flex items-center space-x-3 mb-4">
           <Database className="h-6 w-6 text-blue-400" />
           <h3 className="text-xl font-semibold text-white">Система торговых сессий</h3>
-          <Badge className="bg-green-600 text-white">Реальное время</Badge>
+          {currentSession && (
+            <Badge className="bg-green-600 text-white">
+              Активна: {currentSession.session_name}
+            </Badge>
+          )}
         </div>
         
         <div className="bg-slate-700/50 rounded-lg p-4">
@@ -175,10 +186,10 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
       <SessionManager 
         pair={pair} 
-        onSessionSelected={setSelectedSessionId}
+        onSessionSelected={handleSessionSelected}
       />
 
-      {currentSession && (
+      {currentSession && sessionSelected && (
         <CandleInput 
           pair={pair}
           onCandleSaved={handleCandleSaved}

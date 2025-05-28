@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,6 +31,9 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  console.log('CandleInput rendered with currentSession:', currentSession);
+  console.log('CandleInput candles count:', candles.length);
 
   const nextCandleIndex = currentSession ? Math.max(currentSession.current_candle_index + 1, candles.length) : 0;
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
@@ -74,7 +76,10 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   };
 
   const handleSave = async () => {
-    if (!currentSession) return;
+    if (!currentSession) {
+      console.error('No current session available for saving candle');
+      return;
+    }
 
     const errors = validateData();
     if (errors.length > 0) {
@@ -84,6 +89,16 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
     setIsSubmitting(true);
     try {
+      console.log('Saving candle with data:', {
+        session_id: currentSession.id,
+        candle_index: nextCandleIndex,
+        open: parseNumber(candleData.open),
+        high: parseNumber(candleData.high),
+        low: parseNumber(candleData.low),
+        close: parseNumber(candleData.close),
+        volume: parseNumber(candleData.volume)
+      });
+
       const savedCandle = await saveCandle({
         session_id: currentSession.id,
         candle_index: nextCandleIndex,
@@ -94,6 +109,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         volume: parseNumber(candleData.volume)
       });
 
+      console.log('Candle saved successfully:', savedCandle);
       onCandleSaved(savedCandle);
       
       setCandleData({
@@ -136,6 +152,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   }, [candles, candleData.open]);
 
   if (!currentSession) {
+    console.log('CandleInput: No current session, showing placeholder');
     return (
       <Card className="p-6 bg-slate-700/30 border-slate-600">
         <div className="text-center text-slate-400">
@@ -145,6 +162,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       </Card>
     );
   }
+
+  console.log('CandleInput: Rendering input form for session:', currentSession.session_name);
 
   const isDataValid = validateData().length === 0;
 
