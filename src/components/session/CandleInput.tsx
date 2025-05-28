@@ -33,8 +33,10 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  console.log('CandleInput rendered. currentSession:', currentSession ? 'Yes' : 'No');
+  console.log('CandleInput rendered. currentSession:', currentSession ? currentSession.session_name : 'No session');
+  console.log('CandleInput: candles.length =', candles.length);
 
+  // Убираем проверку на currentSession - компонент должен рендериться всегда
   // Если сессия есть - получаем данные для следующей свечи
   const nextCandleIndex = currentSession ? Math.max(currentSession.current_candle_index + 1, candles.length) : 0;
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
@@ -78,7 +80,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
   const handleSave = async () => {
     if (!currentSession) {
-      console.error('No current session available for saving candle');
+      setValidationErrors(['Нет активной сессии для сохранения данных']);
       return;
     }
 
@@ -155,31 +157,41 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
   const isDataValid = validateData().length === 0;
 
-  // Если нет активной сессии, не отображаем форму ввода данных
-  if (!currentSession) {
-    return null;
-  }
-
-  console.log('CandleInput: Rendering form for session:', currentSession.session_name);
+  console.log('CandleInput: Rendering form. currentSession exists:', !!currentSession);
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-lg font-medium text-white">
           Ввод свечи #{nextCandleIndex + 1}
+          {!currentSession && (
+            <span className="text-orange-400 text-sm ml-2">(Ожидание сессии)</span>
+          )}
         </h4>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-blue-600 text-white">{currentSession.timeframe}</Badge>
-          <Badge className="bg-green-600 text-white">{pair}</Badge>
+          {currentSession && (
+            <>
+              <Badge className="bg-blue-600 text-white">{currentSession.timeframe}</Badge>
+              <Badge className="bg-green-600 text-white">{pair}</Badge>
+            </>
+          )}
         </div>
       </div>
 
-      {nextCandleTime && (
+      {nextCandleTime && currentSession && (
         <div className="mb-4 p-3 bg-blue-600/20 border border-blue-600/50 rounded-lg">
           <div className="flex items-center space-x-2 text-blue-200">
             <Calendar className="h-4 w-4" />
             <span className="font-medium">Время свечи:</span>
             <span>{new Date(nextCandleTime).toLocaleString('ru-RU')}</span>
+          </div>
+        </div>
+      )}
+
+      {!currentSession && (
+        <div className="mb-4 p-3 bg-yellow-600/20 border border-yellow-600/50 rounded-lg">
+          <div className="text-yellow-200 text-sm">
+            ⚠ Выберите или создайте сессию для активации полей ввода
           </div>
         </div>
       )}
@@ -194,7 +206,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
             placeholder={getPlaceholder("open")}
             value={candleData.open}
             onChange={(e) => updateField('open', e.target.value)}
-            className="bg-slate-800 border-slate-600 text-white"
+            disabled={!currentSession}
+            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
           />
         </div>
         
@@ -207,7 +220,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
             placeholder={getPlaceholder("high")}
             value={candleData.high}
             onChange={(e) => updateField('high', e.target.value)}
-            className="bg-slate-800 border-slate-600 text-white"
+            disabled={!currentSession}
+            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
           />
         </div>
         
@@ -220,7 +234,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
             placeholder={getPlaceholder("low")}
             value={candleData.low}
             onChange={(e) => updateField('low', e.target.value)}
-            className="bg-slate-800 border-slate-600 text-white"
+            disabled={!currentSession}
+            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
           />
         </div>
         
@@ -233,7 +248,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
             placeholder={getPlaceholder("close")}
             value={candleData.close}
             onChange={(e) => updateField('close', e.target.value)}
-            className="bg-slate-800 border-slate-600 text-white"
+            disabled={!currentSession}
+            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
           />
         </div>
       </div>
@@ -248,7 +264,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
           placeholder={pair === "BTC/USD" ? "5000" : "1500"}
           value={candleData.volume}
           onChange={(e) => updateField('volume', e.target.value)}
-          className="bg-slate-800 border-slate-600 text-white"
+          disabled={!currentSession}
+          className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
         />
       </div>
 
@@ -264,7 +281,9 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
       <div className="flex items-center justify-between">
         <div className="text-sm text-slate-400">
-          {isDataValid ? (
+          {!currentSession ? (
+            <span className="text-orange-400">Ожидание активной сессии</span>
+          ) : isDataValid ? (
             <span className="text-green-400">✓ Данные корректны</span>
           ) : (
             <span className="text-orange-400">Заполните все поля корректно</span>
@@ -273,7 +292,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         
         <Button 
           onClick={handleSave}
-          disabled={!isDataValid || isSubmitting}
+          disabled={!currentSession || !isDataValid || isSubmitting}
           className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
         >
           <Save className="h-4 w-4 mr-2" />

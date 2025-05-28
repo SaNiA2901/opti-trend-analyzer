@@ -20,16 +20,6 @@ export interface PredictionConfig {
   analysisMode: 'session';
 }
 
-export interface ManualDataInputs {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  date: string;
-  time: string;
-}
-
 export interface PredictionResult {
   direction: 'UP' | 'DOWN';
   probability: number;
@@ -52,9 +42,18 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showCandleInput, setShowCandleInput] = useState(false);
 
-  console.log('BinaryOptionsPredictor: currentSession =', currentSession);
+  console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
   console.log('BinaryOptionsPredictor: candles.length =', candles.length);
+  console.log('BinaryOptionsPredictor: showCandleInput =', showCandleInput);
+
+  // Обновляем состояние показа полей ввода при изменении сессии
+  useEffect(() => {
+    const shouldShow = currentSession !== null;
+    console.log('BinaryOptionsPredictor: updating showCandleInput to', shouldShow);
+    setShowCandleInput(shouldShow);
+  }, [currentSession]);
 
   const generatePrediction = async (candleData: any) => {
     if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
@@ -153,6 +152,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
   const handleSessionSelected = (sessionId: string) => {
     console.log('BinaryOptionsPredictor: Session selected:', sessionId);
+    // Принудительно показываем поля ввода после выбора сессии
+    setShowCandleInput(true);
   };
 
   return (
@@ -171,8 +172,7 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         <div className="bg-slate-700/50 rounded-lg p-4">
           <ul className="text-slate-300 text-sm space-y-2">
             <li>• Создавайте сессии с автоматическим расчетом времени свечей</li>
-            <li>• Каждая св
-            еча сохраняется в базе данных в реальном времени</li>
+            <li>• Каждая свеча сохраняется в базе данных в реальном времени</li>
             <li>• Возможность продолжить работу с любого места после сбоя</li>
             <li>• Автоматические прогнозы для каждой введенной свечи</li>
           </ul>
@@ -184,16 +184,32 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         onSessionSelected={handleSessionSelected}
       />
 
-      {currentSession ? (
-        <CandleInput 
-          pair={pair}
-          onCandleSaved={handleCandleSaved}
-        />
+      {/* Показываем поля ввода если есть активная сессия ИЛИ флаг установлен */}
+      {(currentSession || showCandleInput) ? (
+        <div>
+          <div className="mb-4 p-3 bg-green-600/20 border border-green-600/50 rounded-lg">
+            <div className="text-green-200 text-sm">
+              ✓ Поля ввода данных свечей активированы
+              {currentSession && (
+                <span className="ml-2">
+                  (Сессия: {currentSession.session_name})
+                </span>
+              )}
+            </div>
+          </div>
+          <CandleInput 
+            pair={pair}
+            onCandleSaved={handleCandleSaved}
+          />
+        </div>
       ) : (
         <Card className="p-6 bg-slate-700/30 border-slate-600">
           <div className="text-center text-slate-400">
             <Clock className="h-16 w-16 mx-auto mb-4 text-slate-500" />
             <p>Выберите или создайте сессию для начала ввода данных свечей</p>
+            <div className="mt-2 text-xs text-slate-500">
+              Состояние: showCandleInput = {showCandleInput.toString()}, currentSession = {currentSession ? 'exists' : 'null'}
+            </div>
           </div>
         </Card>
       )}

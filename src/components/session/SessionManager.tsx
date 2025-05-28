@@ -32,7 +32,7 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
     { value: '1d', label: '1 день' }
   ];
   
-  console.log('SessionManager: rendered, currentSession =', currentSession?.id);
+  console.log('SessionManager: rendered, currentSession =', currentSession?.id || 'null');
   console.log('SessionManager: sessions =', sessions.length);
 
   const handleCreateSession = async () => {
@@ -56,7 +56,11 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
       });
       
       console.log('Session created:', session);
-      onSessionSelected(session.id);
+      // Уведомляем родительский компонент с небольшой задержкой
+      setTimeout(() => {
+        onSessionSelected(session.id);
+      }, 100);
+      
       setShowCreateForm(false);
       setSessionName('');
     } catch (error) {
@@ -68,7 +72,10 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
     try {
       console.log('Loading session:', sessionId);
       await loadSession(sessionId);
-      onSessionSelected(sessionId);
+      // Уведомляем родительский компонент с небольшой задержкой
+      setTimeout(() => {
+        onSessionSelected(sessionId);
+      }, 100);
     } catch (error) {
       console.error('Failed to load session:', error);
     }
@@ -93,6 +100,12 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
           <Plus className="h-4 w-4 mr-2" />
           Новая сессия
         </Button>
+      </div>
+
+      {/* Отладочная информация */}
+      <div className="mb-4 p-2 bg-gray-800/50 rounded text-xs text-gray-400">
+        Отладка: Активная сессия = {currentSession ? currentSession.session_name : 'нет'} | 
+        Всего сессий = {sessions.length}
       </div>
 
       {showCreateForm && (
@@ -202,7 +215,7 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
                 
                 <Button 
                   onClick={() => handleLoadSession(session.id)}
-                  disabled={isLoading || currentSession?.id === session.id}
+                  disabled={isLoading}
                   className={currentSession?.id === session.id 
                     ? "bg-green-700 hover:bg-green-800" 
                     : "bg-green-600 hover:bg-green-700"}
