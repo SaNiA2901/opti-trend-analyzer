@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,9 +33,9 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  console.log('CandleInput rendered with currentSession:', currentSession);
-  console.log('CandleInput candles count:', candles.length);
+  console.log('CandleInput rendered. currentSession:', currentSession ? 'Yes' : 'No');
 
+  // Если сессия есть - получаем данные для следующей свечи
   const nextCandleIndex = currentSession ? Math.max(currentSession.current_candle_index + 1, candles.length) : 0;
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
 
@@ -113,7 +114,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       onCandleSaved(savedCandle);
       
       setCandleData({
-        open: candleData.close,
+        open: candleData.close, // Цена закрытия предыдущей свечи становится ценой открытия следующей
         high: '',
         low: '',
         close: '',
@@ -141,6 +142,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     return placeholders[type as keyof typeof placeholders] || "";
   };
 
+  // При изменении свечей в сессии, предзаполняем цену открытия следующей свечи
   useEffect(() => {
     if (candles.length > 0 && !candleData.open) {
       const lastCandle = candles[candles.length - 1];
@@ -151,21 +153,14 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     }
   }, [candles, candleData.open]);
 
+  const isDataValid = validateData().length === 0;
+
+  // Если нет активной сессии, не отображаем форму ввода данных
   if (!currentSession) {
-    console.log('CandleInput: No current session, showing placeholder');
-    return (
-      <Card className="p-6 bg-slate-700/30 border-slate-600">
-        <div className="text-center text-slate-400">
-          <Clock className="h-16 w-16 mx-auto mb-4 text-slate-500" />
-          <p>Выберите или создайте сессию для начала ввода данных свечей</p>
-        </div>
-      </Card>
-    );
+    return null;
   }
 
-  console.log('CandleInput: Rendering input form for session:', currentSession.session_name);
-
-  const isDataValid = validateData().length === 0;
+  console.log('CandleInput: Rendering form for session:', currentSession.session_name);
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">

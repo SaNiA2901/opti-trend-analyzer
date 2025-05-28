@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,9 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sessionSelected, setSessionSelected] = useState(false);
+
+  console.log('BinaryOptionsPredictor: currentSession =', currentSession);
+  console.log('BinaryOptionsPredictor: candles.length =', candles.length);
 
   const generatePrediction = async (candleData: any) => {
     if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
@@ -142,24 +145,15 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   };
 
   const handleCandleSaved = (candleData: any) => {
+    console.log('BinaryOptionsPredictor: Candle saved, generating prediction...', candleData);
     if (candleData) {
       generatePrediction(candleData);
     }
   };
 
   const handleSessionSelected = (sessionId: string) => {
-    console.log('Session selected in BinaryOptionsPredictor:', sessionId);
-    setSessionSelected(true);
+    console.log('BinaryOptionsPredictor: Session selected:', sessionId);
   };
-
-  useEffect(() => {
-    if (currentSession) {
-      console.log('Current session updated:', currentSession);
-      setSessionSelected(true);
-    } else {
-      setSessionSelected(false);
-    }
-  }, [currentSession]);
 
   return (
     <div className="space-y-6">
@@ -177,7 +171,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         <div className="bg-slate-700/50 rounded-lg p-4">
           <ul className="text-slate-300 text-sm space-y-2">
             <li>• Создавайте сессии с автоматическим расчетом времени свечей</li>
-            <li>• Каждая свеча сохраняется в базе данных в реальном времени</li>
+            <li>• Каждая св
+            еча сохраняется в базе данных в реальном времени</li>
             <li>• Возможность продолжить работу с любого места после сбоя</li>
             <li>• Автоматические прогнозы для каждой введенной свечи</li>
           </ul>
@@ -189,11 +184,18 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         onSessionSelected={handleSessionSelected}
       />
 
-      {currentSession && sessionSelected && (
+      {currentSession ? (
         <CandleInput 
           pair={pair}
           onCandleSaved={handleCandleSaved}
         />
+      ) : (
+        <Card className="p-6 bg-slate-700/30 border-slate-600">
+          <div className="text-center text-slate-400">
+            <Clock className="h-16 w-16 mx-auto mb-4 text-slate-500" />
+            <p>Выберите или создайте сессию для начала ввода данных свечей</p>
+          </div>
+        </Card>
       )}
 
       <PredictionSettings 

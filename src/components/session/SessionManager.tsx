@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,11 +31,22 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
     { value: '4h', label: '4 часа' },
     { value: '1d', label: '1 день' }
   ];
+  
+  console.log('SessionManager: rendered, currentSession =', currentSession?.id);
+  console.log('SessionManager: sessions =', sessions.length);
 
   const handleCreateSession = async () => {
     if (!sessionName.trim()) return;
 
     try {
+      console.log('Creating new session:', {
+        session_name: sessionName,
+        pair,
+        timeframe,
+        start_date: startDate,
+        start_time: startTime
+      });
+
       const session = await createSession({
         session_name: sessionName,
         pair,
@@ -43,10 +55,10 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
         start_time: startTime
       });
       
+      console.log('Session created:', session);
       onSessionSelected(session.id);
       setShowCreateForm(false);
       setSessionName('');
-      console.log('Session created and selected:', session.id);
     } catch (error) {
       console.error('Failed to create session:', error);
     }
@@ -54,9 +66,9 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
 
   const handleLoadSession = async (sessionId: string) => {
     try {
+      console.log('Loading session:', sessionId);
       await loadSession(sessionId);
       onSessionSelected(sessionId);
-      console.log('Session loaded and selected:', sessionId);
     } catch (error) {
       console.error('Failed to load session:', error);
     }
@@ -191,7 +203,9 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
                 <Button 
                   onClick={() => handleLoadSession(session.id)}
                   disabled={isLoading || currentSession?.id === session.id}
-                  className="bg-green-600 hover:bg-green-700"
+                  className={currentSession?.id === session.id 
+                    ? "bg-green-700 hover:bg-green-800" 
+                    : "bg-green-600 hover:bg-green-700"}
                 >
                   <Play className="h-4 w-4 mr-2" />
                   {currentSession?.id === session.id ? 'Активна' : 'Загрузить'}

@@ -77,10 +77,11 @@ export const useTradingSession = () => {
 
       if (error) throw error;
       
+      // Устанавливаем текущую сессию и чистим массив свечей
+      console.log('Session created with ID:', data.id);
       setCurrentSession(data);
       setCandles([]);
       await loadSessions();
-      console.log('Session created and set as current:', data);
       return data;
     } catch (error) {
       console.error('Error creating session:', error);
@@ -97,6 +98,8 @@ export const useTradingSession = () => {
 
     setIsLoading(true);
     try {
+      console.log('Loading session data for ID:', sessionId);
+
       const { data: sessionData, error: sessionError } = await supabase
         .from('trading_sessions')
         .select('*')
@@ -113,10 +116,13 @@ export const useTradingSession = () => {
 
       if (candlesError) throw candlesError;
 
+      console.log('Session data loaded:', sessionData);
+      console.log('Candles loaded:', candlesData?.length || 0);
+
       setCurrentSession(sessionData);
       setCandles(candlesData || []);
-      console.log('Session loaded:', sessionData);
-      console.log('Candles loaded:', candlesData?.length || 0);
+      
+      return sessionData;
     } catch (error) {
       console.error('Error loading session:', error);
       throw error;
@@ -187,6 +193,7 @@ export const useTradingSession = () => {
     }
 
     try {
+      console.log('Calculating candle time for index:', candleData.candle_index);
       const candleDateTime = calculateCandleTime(
         currentSession.start_date,
         currentSession.start_time,
@@ -199,6 +206,7 @@ export const useTradingSession = () => {
         candle_datetime: candleDateTime
       };
 
+      console.log('Saving candle data to database:', fullCandleData);
       const { data, error } = await supabase
         .from('candle_data')
         .upsert([fullCandleData], { 
@@ -212,6 +220,7 @@ export const useTradingSession = () => {
 
       const newCandleIndex = Math.max(currentSession.current_candle_index, candleData.candle_index);
       
+      console.log('Updating session current_candle_index to:', newCandleIndex);
       const { error: updateError } = await supabase
         .from('trading_sessions')
         .update({ current_candle_index: newCandleIndex })
@@ -219,6 +228,7 @@ export const useTradingSession = () => {
 
       if (updateError) throw updateError;
 
+      // Обновляем локальное состояние
       setCandles(prev => {
         const filtered = prev.filter(c => c.candle_index !== candleData.candle_index);
         return [...filtered, data].sort((a, b) => a.candle_index - b.candle_index);
@@ -229,7 +239,6 @@ export const useTradingSession = () => {
         current_candle_index: newCandleIndex
       } : null);
 
-      console.log('Candle saved successfully:', data);
       return data;
     } catch (error) {
       console.error('Error saving candle:', error);
@@ -253,6 +262,7 @@ export const useTradingSession = () => {
     }
   };
 
+  // Загрузка сессий при инициализации
   useEffect(() => {
     loadSessions();
   }, []);
