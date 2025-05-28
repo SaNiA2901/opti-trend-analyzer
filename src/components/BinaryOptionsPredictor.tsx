@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,29 +8,11 @@ import PredictionResults from "./predictor/PredictionResults";
 import SessionManager from "./session/SessionManager";
 import CandleInput from "./session/CandleInput";
 import { useTradingSession } from "@/hooks/useTradingSession";
+import { PredictionConfig, PredictionResult } from "@/types/trading";
 
 interface BinaryOptionsPredictorProps {
   pair: string;
   timeframe: string;
-}
-
-export interface PredictionConfig {
-  predictionInterval: number;
-  analysisMode: 'session';
-}
-
-export interface PredictionResult {
-  direction: 'UP' | 'DOWN';
-  probability: number;
-  confidence: number;
-  interval: number;
-  factors: {
-    technical: number;
-    volume: number;
-    momentum: number;
-    volatility: number;
-  };
-  recommendation: string;
 }
 
 const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
