@@ -11,10 +11,9 @@ import { useTradingSession } from '@/hooks/useTradingSession';
 
 interface SessionManagerProps {
   pair: string;
-  onSessionSelected: (sessionId: string) => void;
 }
 
-const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
+const SessionManager = ({ pair }: SessionManagerProps) => {
   const { sessions, createSession, loadSession, isLoading, currentSession } = useTradingSession();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [sessionName, setSessionName] = useState('');
@@ -56,11 +55,6 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
       });
       
       console.log('Session created:', session);
-      // Уведомляем родительский компонент с небольшой задержкой
-      setTimeout(() => {
-        onSessionSelected(session.id);
-      }, 100);
-      
       setShowCreateForm(false);
       setSessionName('');
     } catch (error) {
@@ -72,10 +66,6 @@ const SessionManager = ({ pair, onSessionSelected }: SessionManagerProps) => {
     try {
       console.log('Loading session:', sessionId);
       await loadSession(sessionId);
-      // Уведомляем родительский компонент с небольшой задержкой
-      setTimeout(() => {
-        onSessionSelected(sessionId);
-      }, 100);
     } catch (error) {
       console.error('Failed to load session:', error);
     }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,18 +24,9 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   });
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showCandleInput, setShowCandleInput] = useState(false);
 
   console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
   console.log('BinaryOptionsPredictor: candles.length =', candles.length);
-  console.log('BinaryOptionsPredictor: showCandleInput =', showCandleInput);
-
-  // Обновляем состояние показа полей ввода при изменении сессии
-  useEffect(() => {
-    const shouldShow = currentSession !== null;
-    console.log('BinaryOptionsPredictor: updating showCandleInput to', shouldShow);
-    setShowCandleInput(shouldShow);
-  }, [currentSession]);
 
   const generatePrediction = async (candleData: any) => {
     if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
@@ -131,12 +123,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     }
   };
 
-  const handleSessionSelected = (sessionId: string) => {
-    console.log('BinaryOptionsPredictor: Session selected:', sessionId);
-    // Принудительно показываем поля ввода после выбора сессии
-    setShowCandleInput(true);
-  };
-
   return (
     <div className="space-y-6">
       <Card className="p-6 bg-slate-800/50 border-slate-700">
@@ -162,20 +148,14 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
       <SessionManager 
         pair={pair} 
-        onSessionSelected={handleSessionSelected}
       />
 
-      {/* Показываем поля ввода если есть активная сессия ИЛИ флаг установлен */}
-      {(currentSession || showCandleInput) ? (
+      {/* Показываем поля ввода только если есть активная сессия */}
+      {currentSession ? (
         <div>
           <div className="mb-4 p-3 bg-green-600/20 border border-green-600/50 rounded-lg">
             <div className="text-green-200 text-sm">
-              ✓ Поля ввода данных свечей активированы
-              {currentSession && (
-                <span className="ml-2">
-                  (Сессия: {currentSession.session_name})
-                </span>
-              )}
+              ✓ Поля ввода данных свечей активированы (Сессия: {currentSession.session_name})
             </div>
           </div>
           <CandleInput 
@@ -188,9 +168,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           <div className="text-center text-slate-400">
             <Clock className="h-16 w-16 mx-auto mb-4 text-slate-500" />
             <p>Выберите или создайте сессию для начала ввода данных свечей</p>
-            <div className="mt-2 text-xs text-slate-500">
-              Состояние: showCandleInput = {showCandleInput.toString()}, currentSession = {currentSession ? 'exists' : 'null'}
-            </div>
           </div>
         </Card>
       )}
