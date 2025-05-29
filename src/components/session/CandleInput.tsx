@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Save } from 'lucide-react';
+import { Calendar, Save } from 'lucide-react';
 import { useTradingSession } from '@/hooks/useTradingSession';
+import { useCandleValidation } from '@/hooks/useCandleValidation';
+import { useCandleTime } from '@/hooks/useCandleTime';
 
 interface CandleInputProps {
   pair: string;
@@ -23,6 +25,9 @@ interface CandleFormData {
 
 const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const { currentSession, candles, saveCandle, getNextCandleTime } = useTradingSession();
+  const { validateFormData } = useCandleValidation();
+  const { formatCandleTime } = useCandleTime();
+  
   const [candleData, setCandleData] = useState<CandleFormData>({
     open: '',
     high: '',
@@ -33,11 +38,6 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  console.log('CandleInput rendered. currentSession:', currentSession ? currentSession.session_name : 'No session');
-  console.log('CandleInput: candles.length =', candles.length);
-
-  // Убираем проверку на currentSession - компонент должен рендериться всегда
-  // Если сессия есть - получаем данные для следующей свечи
   const nextCandleIndex = currentSession ? Math.max(currentSession.current_candle_index + 1, candles.length) : 0;
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
 
@@ -54,54 +54,20 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     setValidationErrors([]);
   };
 
-  const validateData = (): string[] => {
-    const errors: string[] = [];
-    const open = parseNumber(candleData.open);
-    const high = parseNumber(candleData.high);
-    const low = parseNumber(candleData.low);
-    const close = parseNumber(candleData.close);
-    const volume = parseNumber(candleData.volume);
-
-    if (open <= 0) errors.push('Цена открытия должна быть больше 0');
-    if (high <= 0) errors.push('Максимальная цена должна быть больше 0');
-    if (low <= 0) errors.push('Минимальная цена должна быть больше 0');
-    if (close <= 0) errors.push('Цена закрытия должна быть больше 0');
-    if (volume < 0) errors.push('Объем не может быть отрицательным');
-
-    if (high < Math.max(open, close)) {
-      errors.push('Максимум должен быть >= max(открытие, закрытие)');
-    }
-    if (low > Math.min(open, close)) {
-      errors.push('Минимум должен быть <= min(открытие, закрытие)');
-    }
-
-    return errors;
-  };
-
   const handleSave = async () => {
     if (!currentSession) {
       setValidationErrors(['Нет активной сессии для сохранения данных']);
       return;
     }
 
-    const errors = validateData();
-    if (errors.length > 0) {
-      setValidationErrors(errors);
+    const validation = validateFormData(candleData);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      console.log('Saving candle with data:', {
-        session_id: currentSession.id,
-        candle_index: nextCandleIndex,
-        open: parseNumber(candleData.open),
-        high: parseNumber(candleData.high),
-        low: parseNumber(candleData.low),
-        close: parseNumber(candleData.close),
-        volume: parseNumber(candleData.volume)
-      });
-
       const savedCandle = await saveCandle({
         session_id: currentSession.id,
         candle_index: nextCandleIndex,
@@ -116,7 +82,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       onCandleSaved(savedCandle);
       
       setCandleData({
-        open: candleData.close, // Цена закрытия предыдущей свечи становится ценой открытия следующей
+        open: candleData.close,
         high: '',
         low: '',
         close: '',
@@ -144,7 +110,6 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     return placeholders[type as keyof typeof placeholders] || "";
   };
 
-  // При изменении свечей в сессии, предзаполняем цену открытия следующей свечи
   useEffect(() => {
     if (candles.length > 0 && !candleData.open) {
       const lastCandle = candles[candles.length - 1];
@@ -155,9 +120,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     }
   }, [candles, candleData.open]);
 
-  const isDataValid = validateData().length === 0;
-
-  console.log('CandleInput: Rendering form. currentSession exists:', !!currentSession);
+  const validation = validateFormData(candleData);
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
@@ -183,7 +146,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
           <div className="flex items-center space-x-2 text-blue-200">
             <Calendar className="h-4 w-4" />
             <span className="font-medium">Время свечи:</span>
-            <span>{new Date(nextCandleTime).toLocaleString('ru-RU')}</span>
+            <span>{formatCandleTime(nextCandleTime)}</span>
           </div>
         </div>
       )}
@@ -283,7 +246,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         <div className="text-sm text-slate-400">
           {!currentSession ? (
             <span className="text-orange-400">Ожидание активной сессии</span>
-          ) : isDataValid ? (
+          ) : validation.isValid ? (
             <span className="text-green-400">✓ Данные корректны</span>
           ) : (
             <span className="text-orange-400">Заполните все поля корректно</span>
@@ -292,7 +255,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         
         <Button 
           onClick={handleSave}
-          disabled={!currentSession || !isDataValid || isSubmitting}
+          disabled={!currentSession || !validation.isValid || isSubmitting}
           className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
         >
           <Save className="h-4 w-4 mr-2" />

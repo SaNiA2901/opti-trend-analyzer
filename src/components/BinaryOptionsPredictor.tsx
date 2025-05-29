@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -146,11 +146,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
         </div>
       </Card>
 
-      <SessionManager 
-        pair={pair} 
-      />
+      <SessionManager pair={pair} />
 
-      {/* Показываем поля ввода только если есть активная сессия */}
       {currentSession ? (
         <div>
           <div className="mb-4 p-3 bg-green-600/20 border border-green-600/50 rounded-lg">
