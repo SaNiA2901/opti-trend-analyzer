@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export interface ErrorState {
   message: string;
@@ -17,6 +18,9 @@ export const useErrorHandler = () => {
       timestamp: new Date()
     };
     setErrors(prev => [...prev, error]);
+    
+    // Показываем toast уведомление
+    toast.error(message);
     console.error('Application Error:', error);
   };
 

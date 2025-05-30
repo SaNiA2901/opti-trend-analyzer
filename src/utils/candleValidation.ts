@@ -58,3 +58,36 @@ export const validateCandleData = (candleData: Partial<CandleData>): CandleValid
     errors: [...errors, ...ohlcValidation.errors]
   };
 };
+
+export const validateFormData = (formData: {
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+}): CandleValidationResult => {
+  const errors: string[] = [];
+  const open = parseFloat(formData.open);
+  const high = parseFloat(formData.high);
+  const low = parseFloat(formData.low);
+  const close = parseFloat(formData.close);
+  const volume = parseFloat(formData.volume);
+
+  if (isNaN(open) || open <= 0) errors.push('Цена открытия должна быть положительным числом');
+  if (isNaN(high) || high <= 0) errors.push('Максимальная цена должна быть положительным числом');
+  if (isNaN(low) || low <= 0) errors.push('Минимальная цена должна быть положительным числом');
+  if (isNaN(close) || close <= 0) errors.push('Цена закрытия должна быть положительным числом');
+  if (isNaN(volume) || volume < 0) errors.push('Объем должен быть неотрицательным числом');
+
+  if (!isNaN(high) && !isNaN(open) && !isNaN(close) && high < Math.max(open, close)) {
+    errors.push('Максимум должен быть >= max(открытие, закрытие)');
+  }
+  if (!isNaN(low) && !isNaN(open) && !isNaN(close) && low > Math.min(open, close)) {
+    errors.push('Минимум должен быть <= min(открытие, закрытие)');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
