@@ -28,6 +28,14 @@ export const validateCandleOHLC = (
     errors.push('Минимальная цена не может быть больше цены открытия или закрытия');
   }
 
+  // Дополнительные проверки на разумность данных
+  const maxPrice = Math.max(open, high, low, close);
+  const minPrice = Math.min(open, high, low, close);
+  
+  if (maxPrice / minPrice > 100) {
+    errors.push('Слишком большая разница между максимальной и минимальной ценой');
+  }
+
   return {
     isValid: errors.length === 0,
     errors
@@ -44,6 +52,11 @@ export const validateCandleData = (candleData: Partial<CandleData>): CandleValid
 
   if (!candleData.volume || candleData.volume < 0) {
     errors.push('Объем должен быть положительным числом');
+  }
+
+  // Проверка на максимальный объем (защита от ошибок ввода)
+  if (candleData.volume && candleData.volume > 1000000000) {
+    errors.push('Объем слишком большой (больше 1 млрд)');
   }
 
   const ohlcValidation = validateCandleOHLC(
@@ -67,6 +80,14 @@ export const validateFormData = (formData: {
   volume: string;
 }): CandleValidationResult => {
   const errors: string[] = [];
+  
+  // Проверка на пустые значения
+  if (!formData.open.trim()) errors.push('Цена открытия не может быть пустой');
+  if (!formData.high.trim()) errors.push('Максимальная цена не может быть пустой');
+  if (!formData.low.trim()) errors.push('Минимальная цена не может быть пустой');
+  if (!formData.close.trim()) errors.push('Цена закрытия не может быть пустой');
+  if (!formData.volume.trim()) errors.push('Объем не может быть пустым');
+
   const open = parseFloat(formData.open);
   const high = parseFloat(formData.high);
   const low = parseFloat(formData.low);
@@ -90,4 +111,13 @@ export const validateFormData = (formData: {
     isValid: errors.length === 0,
     errors
   };
+};
+
+export const sanitizeNumericInput = (value: string): string => {
+  // Удаляем все символы кроме цифр, точки и запятой
+  return value.replace(/[^0-9.,]/g, '').replace(',', '.');
+};
+
+export const formatPrice = (price: number, decimals: number = 5): string => {
+  return price.toFixed(decimals);
 };

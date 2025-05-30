@@ -35,6 +35,14 @@ export const useImprovedSessionOperations = (
     start_date: string;
     start_time: string;
   }) => {
+    // Валидация входных данных
+    if (!sessionData.session_name.trim()) {
+      throw new Error('Название сессии не может быть пустым');
+    }
+    if (!sessionData.pair.trim()) {
+      throw new Error('Валютная пара должна быть указана');
+    }
+
     setIsLoading(true);
     try {
       const session = await handleAsyncError(
@@ -81,9 +89,29 @@ export const useImprovedSessionOperations = (
     }
   }, [setIsLoading, setCurrentSession, setCandles, handleAsyncError]);
 
+  const deleteSession = useCallback(async (sessionId: string) => {
+    if (!sessionId) {
+      throw new Error('ID сессии не может быть пустым');
+    }
+
+    setIsLoading(true);
+    try {
+      await handleAsyncError(
+        () => sessionService.deleteSession(sessionId),
+        'Ошибка удаления сессии'
+      );
+      
+      await loadSessions();
+      console.log('Session deleted successfully:', sessionId);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setIsLoading, loadSessions, handleAsyncError]);
+
   return {
     loadSessions,
     createSession,
-    loadSession
+    loadSession,
+    deleteSession
   };
 };

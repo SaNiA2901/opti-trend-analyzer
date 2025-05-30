@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTradingSession } from '@/hooks/useTradingSession';
-import { validateCandleData } from '@/utils/candleValidation';
+import { validateFormData } from '@/utils/candleValidation';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import CandleInputHeader from './CandleInputHeader';
 import CandleInputForm from './CandleInputForm';
 import CandleInputFooter from './CandleInputFooter';
@@ -21,7 +22,17 @@ interface CandleFormData {
 }
 
 const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
-  const { currentSession, candles, saveCandle, getNextCandleTime, nextCandleIndex } = useTradingSession();
+  const { 
+    currentSession, 
+    candles, 
+    saveCandle, 
+    getNextCandleTime, 
+    nextCandleIndex,
+    sessionStats,
+    deleteCandle
+  } = useTradingSession();
+  
+  const { addError } = useErrorHandler();
   
   const [candleData, setCandleData] = useState<CandleFormData>({
     open: '',
@@ -35,22 +46,30 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
 
-  const parseNumber = (value: string): number => {
+  const parseNumber = useCallback((value: string): number => {
     const parsed = parseFloat(value);
     return isNaN(parsed) ? 0 : parsed;
-  };
+  }, []);
 
-  const updateField = (field: keyof CandleFormData, value: string) => {
+  const updateField = useCallback((field: string, value: string) => {
     setCandleData(prev => ({
       ...prev,
       [field]: value
     }));
     setValidationErrors([]);
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!currentSession) {
-      setValidationErrors(['Нет активной сессии для сохранения данных']);
+      const error = 'Нет активной сессии для сохранения данных';
+      setValidationErrors([error]);
+      addError(error);
+      return;
+    }
+
+    const validation = validateFormData(candleData);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
       return;
     }
 
@@ -61,12 +80,6 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       close: parseNumber(candleData.close),
       volume: parseNumber(candleData.volume)
     };
-
-    const validation = validateCandleData(numericData);
-    if (!validation.isValid) {
-      setValidationErrors(validation.errors);
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -79,6 +92,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       console.log('Candle saved successfully:', savedCandle);
       onCandleSaved(savedCandle);
       
+      // Автозаполнение следующей свечи
       setCandleData({
         open: candleData.close,
         high: '',
@@ -89,12 +103,28 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       setValidationErrors([]);
     } catch (error) {
       console.error('Error saving candle:', error);
-      setValidationErrors([error instanceof Error ? error.message : 'Ошибка сохранения']);
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка сохранения';
+      setValidationErrors([errorMessage]);
+      addError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [currentSession, candleData, nextCandleIndex, saveCandle, onCandleSaved, parseNumber, addError]);
 
+  const handleDeleteLastCandle = useCallback(async () => {
+    if (!currentSession || candles.length === 0) return;
+
+    const lastCandle = candles[candles.length - 1];
+    try {
+      await deleteCandle(lastCandle.candle_index);
+      console.log('Last candle deleted successfully');
+    } catch (error) {
+      console.error('Error deleting last candle:', error);
+      addError('Ошибка удаления последней свечи');
+    }
+  }, [currentSession, candles, deleteCandle, addError]);
+
+  // Автозаполнение цены открытия на основе последней свечи
   useEffect(() => {
     if (candles.length > 0 && !candleData.open) {
       const lastCandle = candles[candles.length - 1];
@@ -114,6 +144,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         currentSession={currentSession}
         nextCandleTime={nextCandleTime}
         pair={pair}
+        sessionStats={sessionStats}
       />
 
       <CandleInputForm
@@ -139,6 +170,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         isSubmitting={isSubmitting}
         onSave={handleSave}
         candles={candles}
+        onDeleteLastCandle={handleDeleteLastCandle}
       />
     </Card>
   );

@@ -12,7 +12,7 @@ export const useImprovedCandleOperations = (
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void,
   setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void
 ) => {
-  const { handleAsyncError } = useErrorHandler();
+  const { handleAsyncError, withErrorBoundary } = useErrorHandler();
 
   const saveCandle = useCallback(async (candleData: Omit<CandleData, 'id' | 'candle_datetime'>) => {
     if (!currentSession) {
@@ -63,7 +63,8 @@ export const useImprovedCandleOperations = (
 
       setCurrentSession(prev => prev ? {
         ...prev,
-        current_candle_index: newCandleIndex
+        current_candle_index: newCandleIndex,
+        updated_at: new Date().toISOString()
       } : null);
 
       return savedCandle;
@@ -76,21 +77,63 @@ export const useImprovedCandleOperations = (
   const getNextCandleTime = useCallback((candleIndex: number): string => {
     if (!currentSession) return '';
     
-    try {
+    return withErrorBoundary(() => {
       return calculateCandleDateTime(
         currentSession.start_date,
         currentSession.start_time,
         currentSession.timeframe,
         candleIndex
       );
-    } catch (error) {
-      console.error('Error calculating next candle time:', error);
-      return '';
+    }, 'Ошибка расчета времени свечи') || '';
+  }, [currentSession, withErrorBoundary]);
+
+  const deleteCandle = useCallback(async (candleIndex: number) => {
+    if (!currentSession) {
+      throw new Error('Нет активной сессии');
     }
-  }, [currentSession]);
+
+    try {
+      await handleAsyncError(
+        () => candleService.deleteCandle(currentSession.id, candleIndex),
+        'Ошибка удаления свечи'
+      );
+
+      setCandles(prev => prev.filter(c => c.candle_index !== candleIndex));
+      console.log('Candle deleted successfully:', candleIndex);
+    } catch (error) {
+      console.error('Error deleting candle:', error);
+      throw error;
+    }
+  }, [currentSession, setCandles, handleAsyncError]);
+
+  const updateCandle = useCallback(async (candleIndex: number, updatedData: Partial<CandleData>) => {
+    if (!currentSession) {
+      throw new Error('Нет активной сессии');
+    }
+
+    try {
+      const updatedCandle = await handleAsyncError(
+        () => candleService.updateCandle(currentSession.id, candleIndex, updatedData),
+        'Ошибка обновления свечи'
+      );
+
+      if (updatedCandle) {
+        setCandles(prev => prev.map(c => 
+          c.candle_index === candleIndex ? updatedCandle : c
+        ));
+        console.log('Candle updated successfully:', candleIndex);
+        return updatedCandle;
+      }
+    } catch (error) {
+      console.error('Error updating candle:', error);
+      throw error;
+    }
+  }, [currentSession, setCandles, handleAsyncError]);
 
   return {
     saveCandle,
-    getNextCandleTime
+    getNextCandleTime,
+    deleteCandle,
+    updateCandle
   };
 };

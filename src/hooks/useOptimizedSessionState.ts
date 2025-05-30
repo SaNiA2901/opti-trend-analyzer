@@ -2,6 +2,15 @@
 import { useState, useCallback, useMemo } from 'react';
 import { TradingSession, CandleData } from './useTradingSession';
 
+interface SessionStats {
+  totalCandles: number;
+  lastPrice: number | null;
+  priceChange: number;
+  highestPrice: number | null;
+  lowestPrice: number | null;
+  averageVolume: number;
+}
+
 export const useOptimizedSessionState = () => {
   const [currentSession, setCurrentSession] = useState<TradingSession | null>(null);
   const [sessions, setSessions] = useState<TradingSession[]>([]);
@@ -9,21 +18,36 @@ export const useOptimizedSessionState = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Мемоизированные селекторы для предотвращения лишних re-renders
-  const sessionStats = useMemo(() => {
+  const sessionStats = useMemo((): SessionStats => {
     if (!currentSession || candles.length === 0) {
-      return { totalCandles: 0, lastPrice: null, priceChange: 0 };
+      return { 
+        totalCandles: 0, 
+        lastPrice: null, 
+        priceChange: 0,
+        highestPrice: null,
+        lowestPrice: null,
+        averageVolume: 0
+      };
     }
 
     const sortedCandles = [...candles].sort((a, b) => a.candle_index - b.candle_index);
     const firstCandle = sortedCandles[0];
     const lastCandle = sortedCandles[sortedCandles.length - 1];
     
+    const prices = candles.flatMap(c => [c.open, c.high, c.low, c.close]);
+    const highestPrice = Math.max(...prices);
+    const lowestPrice = Math.min(...prices);
+    const averageVolume = candles.reduce((sum, c) => sum + c.volume, 0) / candles.length;
+    
     return {
       totalCandles: candles.length,
       lastPrice: lastCandle?.close || null,
       priceChange: lastCandle && firstCandle 
         ? ((lastCandle.close - firstCandle.open) / firstCandle.open) * 100 
-        : 0
+        : 0,
+      highestPrice,
+      lowestPrice,
+      averageVolume
     };
   }, [currentSession, candles]);
 
@@ -41,6 +65,12 @@ export const useOptimizedSessionState = () => {
     setCurrentSession(updater);
   }, []);
 
+  const resetState = useCallback(() => {
+    setCurrentSession(null);
+    setCandles([]);
+    setIsLoading(false);
+  }, []);
+
   return {
     currentSession,
     setCurrentSession: updateCurrentSession,
@@ -51,6 +81,7 @@ export const useOptimizedSessionState = () => {
     isLoading,
     setIsLoading,
     sessionStats,
-    nextCandleIndex
+    nextCandleIndex,
+    resetState
   };
 };

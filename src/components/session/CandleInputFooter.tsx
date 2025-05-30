@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 import { CandleData } from '@/hooks/useTradingSession';
 
 interface CandleInputFooterProps {
@@ -10,6 +10,7 @@ interface CandleInputFooterProps {
   isSubmitting: boolean;
   onSave: () => void;
   candles: CandleData[];
+  onDeleteLastCandle?: () => void;
 }
 
 const CandleInputFooter = ({ 
@@ -17,8 +18,11 @@ const CandleInputFooter = ({
   isValid, 
   isSubmitting, 
   onSave, 
-  candles 
+  candles,
+  onDeleteLastCandle 
 }: CandleInputFooterProps) => {
+  const lastCandle = candles.length > 0 ? candles[candles.length - 1] : null;
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -32,20 +36,46 @@ const CandleInputFooter = ({
           )}
         </div>
         
-        <Button 
-          onClick={onSave}
-          disabled={!currentSession || !isValid || isSubmitting}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {isSubmitting ? 'Сохранение...' : 'Сохранить свечу'}
-        </Button>
+        <div className="flex space-x-2">
+          {lastCandle && onDeleteLastCandle && (
+            <Button 
+              onClick={onDeleteLastCandle}
+              variant="destructive"
+              size="sm"
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Удалить последнюю
+            </Button>
+          )}
+          
+          <Button 
+            onClick={onSave}
+            disabled={!currentSession || !isValid || isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting ? 'Сохранение...' : 'Сохранить свечу'}
+          </Button>
+        </div>
       </div>
 
       {candles.length > 0 && (
         <div className="mt-4 pt-4 border-t border-slate-600">
-          <div className="text-sm text-slate-400">
-            Сохранено свечей: {candles.length} | Последняя цена: {candles[candles.length - 1]?.close || 'N/A'}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-400">
+            <div>
+              <span className="text-slate-300">Сохранено свечей:</span> {candles.length}
+            </div>
+            <div>
+              <span className="text-slate-300">Последняя цена:</span> {lastCandle?.close || 'N/A'}
+            </div>
+            <div>
+              <span className="text-slate-300">Средний объем:</span> {
+                candles.length > 0 
+                  ? (candles.reduce((sum, c) => sum + c.volume, 0) / candles.length).toFixed(0)
+                  : 'N/A'
+              }
+            </div>
           </div>
         </div>
       )}

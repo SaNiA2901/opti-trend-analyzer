@@ -67,9 +67,64 @@ export const sessionService = {
   async updateSessionCandleIndex(sessionId: string, candleIndex: number): Promise<void> {
     const { error } = await supabase
       .from('trading_sessions')
-      .update({ current_candle_index: candleIndex })
+      .update({ 
+        current_candle_index: candleIndex,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', sessionId);
 
     if (error) throw error;
+  },
+
+  async deleteSession(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      throw new Error('Session ID is required');
+    }
+
+    // Сначала удаляем все свечи сессии
+    const { error: candlesError } = await supabase
+      .from('candle_data')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (candlesError) throw candlesError;
+
+    // Затем удаляем саму сессию
+    const { error: sessionError } = await supabase
+      .from('trading_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (sessionError) throw sessionError;
+  },
+
+  async duplicateSession(sessionId: string, newName: string): Promise<TradingSession> {
+    if (!sessionId) {
+      throw new Error('Session ID is required');
+    }
+
+    const { data: originalSession, error } = await supabase
+      .from('trading_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (error) throw error;
+
+    const { data: newSession, error: createError } = await supabase
+      .from('trading_sessions')
+      .insert([{
+        session_name: newName,
+        pair: originalSession.pair,
+        timeframe: originalSession.timeframe,
+        start_date: originalSession.start_date,
+        start_time: originalSession.start_time,
+        current_candle_index: 0
+      }])
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    return newSession;
   }
 };
