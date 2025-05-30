@@ -53,7 +53,9 @@ export const useTradingSession = () => {
 
   const {
     saveCandle,
-    getNextCandleTime
+    getNextCandleTime,
+    deleteCandle,
+    updateCandle
   } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
   // Загрузка сессий при инициализации
@@ -72,6 +74,8 @@ export const useTradingSession = () => {
     getNextCandleTime,
     loadSessions,
     sessionStats,
-    nextCandleIndex
+    nextCandleIndex,
+    deleteCandle,
+    updateCandle
   };
 };

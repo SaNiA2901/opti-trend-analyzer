@@ -77,14 +77,16 @@ export const useImprovedCandleOperations = (
   const getNextCandleTime = useCallback((candleIndex: number): string => {
     if (!currentSession) return '';
     
-    return withErrorBoundary(() => {
+    const result = withErrorBoundary(() => {
       return calculateCandleDateTime(
         currentSession.start_date,
         currentSession.start_time,
         currentSession.timeframe,
         candleIndex
       );
-    }, 'Ошибка расчета времени свечи') || '';
+    }, 'Ошибка расчета времени свечи');
+    
+    return result || '';
   }, [currentSession, withErrorBoundary]);
 
   const deleteCandle = useCallback(async (candleIndex: number) => {
