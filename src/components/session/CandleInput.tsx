@@ -1,14 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar, Save } from 'lucide-react';
 import { useTradingSession } from '@/hooks/useTradingSession';
-import { useCandleValidation } from '@/hooks/useCandleValidation';
-import { useCandleTime } from '@/hooks/useCandleTime';
+import { useFormValidation } from '@/hooks/useFormValidation';
+import { validateCandleData } from '@/utils/candleValidation';
+import CandleInputHeader from './CandleInputHeader';
+import CandleInputForm from './CandleInputForm';
+import CandleInputFooter from './CandleInputFooter';
 
 interface CandleInputProps {
   pair: string;
@@ -24,9 +22,7 @@ interface CandleFormData {
 }
 
 const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
-  const { currentSession, candles, saveCandle, getNextCandleTime } = useTradingSession();
-  const { validateFormData } = useCandleValidation();
-  const { formatCandleTime } = useCandleTime();
+  const { currentSession, candles, saveCandle, getNextCandleTime, nextCandleIndex } = useTradingSession();
   
   const [candleData, setCandleData] = useState<CandleFormData>({
     open: '',
@@ -38,7 +34,6 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  const nextCandleIndex = currentSession ? Math.max(currentSession.current_candle_index + 1, candles.length) : 0;
   const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
 
   const parseNumber = (value: string): number => {
@@ -60,7 +55,15 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       return;
     }
 
-    const validation = validateFormData(candleData);
+    const numericData = {
+      open: parseNumber(candleData.open),
+      high: parseNumber(candleData.high),
+      low: parseNumber(candleData.low),
+      close: parseNumber(candleData.close),
+      volume: parseNumber(candleData.volume)
+    };
+
+    const validation = validateCandleData(numericData);
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
       return;
@@ -71,11 +74,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       const savedCandle = await saveCandle({
         session_id: currentSession.id,
         candle_index: nextCandleIndex,
-        open: parseNumber(candleData.open),
-        high: parseNumber(candleData.high),
-        low: parseNumber(candleData.low),
-        close: parseNumber(candleData.close),
-        volume: parseNumber(candleData.volume)
+        ...numericData
       });
 
       console.log('Candle saved successfully:', savedCandle);
@@ -97,19 +96,6 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     }
   };
 
-  const getPlaceholder = (type: string): string => {
-    if (pair === "BTC/USD") {
-      const placeholders = { open: "67500", high: "68000", low: "67000", close: "67800" };
-      return placeholders[type as keyof typeof placeholders] || "";
-    }
-    if (pair.includes("JPY")) {
-      const placeholders = { open: "149.50", high: "149.85", low: "149.20", close: "149.70" };
-      return placeholders[type as keyof typeof placeholders] || "";
-    }
-    const placeholders = { open: "1.0850", high: "1.0875", low: "1.0830", close: "1.0860" };
-    return placeholders[type as keyof typeof placeholders] || "";
-  };
-
   useEffect(() => {
     if (candles.length > 0 && !candleData.open) {
       const lastCandle = candles[candles.length - 1];
@@ -120,117 +106,23 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     }
   }, [candles, candleData.open]);
 
-  const validation = validateFormData(candleData);
+  const isFormValid = Object.values(candleData).every(value => value.trim() !== '');
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-lg font-medium text-white">
-          Ввод свечи #{nextCandleIndex + 1}
-          {!currentSession && (
-            <span className="text-orange-400 text-sm ml-2">(Ожидание сессии)</span>
-          )}
-        </h4>
-        <div className="flex items-center space-x-2">
-          {currentSession && (
-            <>
-              <Badge className="bg-blue-600 text-white">{currentSession.timeframe}</Badge>
-              <Badge className="bg-green-600 text-white">{pair}</Badge>
-            </>
-          )}
-        </div>
-      </div>
+      <CandleInputHeader
+        nextCandleIndex={nextCandleIndex}
+        currentSession={currentSession}
+        nextCandleTime={nextCandleTime}
+        pair={pair}
+      />
 
-      {nextCandleTime && currentSession && (
-        <div className="mb-4 p-3 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-          <div className="flex items-center space-x-2 text-blue-200">
-            <Calendar className="h-4 w-4" />
-            <span className="font-medium">Время свечи:</span>
-            <span>{formatCandleTime(nextCandleTime)}</span>
-          </div>
-        </div>
-      )}
-
-      {!currentSession && (
-        <div className="mb-4 p-3 bg-yellow-600/20 border border-yellow-600/50 rounded-lg">
-          <div className="text-yellow-200 text-sm">
-            ⚠ Выберите или создайте сессию для активации полей ввода
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <Label htmlFor="open" className="text-slate-300">Open (Открытие)</Label>
-          <Input
-            id="open"
-            type="number"
-            step="any"
-            placeholder={getPlaceholder("open")}
-            value={candleData.open}
-            onChange={(e) => updateField('open', e.target.value)}
-            disabled={!currentSession}
-            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="high" className="text-slate-300">High (Максимум)</Label>
-          <Input
-            id="high"
-            type="number"
-            step="any"
-            placeholder={getPlaceholder("high")}
-            value={candleData.high}
-            onChange={(e) => updateField('high', e.target.value)}
-            disabled={!currentSession}
-            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="low" className="text-slate-300">Low (Минимум)</Label>
-          <Input
-            id="low"
-            type="number"
-            step="any"
-            placeholder={getPlaceholder("low")}
-            value={candleData.low}
-            onChange={(e) => updateField('low', e.target.value)}
-            disabled={!currentSession}
-            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="close" className="text-slate-300">Close (Закрытие)</Label>
-          <Input
-            id="close"
-            type="number"
-            step="any"
-            placeholder={getPlaceholder("close")}
-            value={candleData.close}
-            onChange={(e) => updateField('close', e.target.value)}
-            disabled={!currentSession}
-            className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
-          />
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <Label htmlFor="volume" className="text-slate-300">Volume (Объем)</Label>
-        <Input
-          id="volume"
-          type="number"
-          min="0"
-          step="any"
-          placeholder={pair === "BTC/USD" ? "5000" : "1500"}
-          value={candleData.volume}
-          onChange={(e) => updateField('volume', e.target.value)}
-          disabled={!currentSession}
-          className={`bg-slate-800 border-slate-600 text-white ${!currentSession ? 'opacity-50' : ''}`}
-        />
-      </div>
+      <CandleInputForm
+        candleData={candleData}
+        onFieldChange={updateField}
+        isDisabled={!currentSession}
+        pair={pair}
+      />
 
       {validationErrors.length > 0 && (
         <div className="mb-4 p-3 bg-red-600/20 border border-red-600/50 rounded-lg">
@@ -242,34 +134,13 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-400">
-          {!currentSession ? (
-            <span className="text-orange-400">Ожидание активной сессии</span>
-          ) : validation.isValid ? (
-            <span className="text-green-400">✓ Данные корректны</span>
-          ) : (
-            <span className="text-orange-400">Заполните все поля корректно</span>
-          )}
-        </div>
-        
-        <Button 
-          onClick={handleSave}
-          disabled={!currentSession || !validation.isValid || isSubmitting}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {isSubmitting ? 'Сохранение...' : 'Сохранить свечу'}
-        </Button>
-      </div>
-
-      {candles.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-600">
-          <div className="text-sm text-slate-400">
-            Сохранено свечей: {candles.length} | Последняя цена: {candles[candles.length - 1]?.close || 'N/A'}
-          </div>
-        </div>
-      )}
+      <CandleInputFooter
+        currentSession={currentSession}
+        isValid={isFormValid}
+        isSubmitting={isSubmitting}
+        onSave={handleSave}
+        candles={candles}
+      />
     </Card>
   );
 };

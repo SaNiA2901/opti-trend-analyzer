@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "trading_sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_candle_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "trading_sessions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       trading_sessions: {

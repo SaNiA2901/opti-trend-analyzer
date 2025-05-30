@@ -1,8 +1,7 @@
-
 import { useEffect } from 'react';
-import { useSessionState } from './useSessionState';
-import { useSessionOperations } from './useSessionOperations';
-import { useCandleOperations } from './useCandleOperations';
+import { useOptimizedSessionState } from './useOptimizedSessionState';
+import { useImprovedSessionOperations } from './useImprovedSessionOperations';
+import { useImprovedCandleOperations } from './useImprovedCandleOperations';
 
 export interface TradingSession {
   id: string;
@@ -40,24 +39,26 @@ export const useTradingSession = () => {
     candles,
     setCandles,
     isLoading,
-    setIsLoading
-  } = useSessionState();
+    setIsLoading,
+    sessionStats,
+    nextCandleIndex
+  } = useOptimizedSessionState();
 
   const {
     loadSessions,
     createSession,
     loadSession
-  } = useSessionOperations(setIsLoading, setSessions, setCurrentSession, setCandles);
+  } = useImprovedSessionOperations(setIsLoading, setSessions, setCurrentSession, setCandles);
 
   const {
     saveCandle,
     getNextCandleTime
-  } = useCandleOperations(currentSession, setCandles, setCurrentSession);
+  } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
   // Загрузка сессий при инициализации
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
   return {
     currentSession,
@@ -68,6 +69,8 @@ export const useTradingSession = () => {
     loadSession,
     saveCandle,
     getNextCandleTime,
-    loadSessions
+    loadSessions,
+    sessionStats,
+    nextCandleIndex
   };
 };
