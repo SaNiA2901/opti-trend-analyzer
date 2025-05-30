@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTradingSession } from '@/hooks/useTradingSession';
-import { useFormValidation } from '@/hooks/useFormValidation';
 import { validateCandleData } from '@/utils/candleValidation';
 import CandleInputHeader from './CandleInputHeader';
 import CandleInputForm from './CandleInputForm';

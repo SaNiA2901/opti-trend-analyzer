@@ -1,14 +1,14 @@
 
 import { useCallback } from 'react';
 import { sessionService } from '@/services/sessionService';
-import { TradingSession } from './useTradingSession';
+import { TradingSession, CandleData } from './useTradingSession';
 import { useErrorHandler } from './useErrorHandler';
 
 export const useImprovedSessionOperations = (
   setIsLoading: (loading: boolean) => void,
   setSessions: (sessions: TradingSession[]) => void,
-  setCurrentSession: (session: TradingSession | null) => void,
-  setCandles: (candles: any[]) => void
+  setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void,
+  setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void
 ) => {
   const { handleAsyncError } = useErrorHandler();
 
@@ -44,8 +44,8 @@ export const useImprovedSessionOperations = (
       
       if (session) {
         console.log('Session created successfully:', session.id);
-        setCurrentSession(session);
-        setCandles([]);
+        setCurrentSession(() => session);
+        setCandles(() => []);
         await loadSessions();
         return session;
       }
@@ -71,8 +71,8 @@ export const useImprovedSessionOperations = (
         console.log('Session loaded successfully:', result.session.id);
         console.log('Candles loaded:', result.candles.length);
         
-        setCurrentSession(result.session);
-        setCandles(result.candles);
+        setCurrentSession(() => result.session);
+        setCandles(() => result.candles);
         return result.session;
       }
       throw new Error('Не удалось загрузить сессию');

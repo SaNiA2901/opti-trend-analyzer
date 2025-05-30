@@ -32,7 +32,7 @@ export const useOptimizedSessionState = () => {
     return Math.max(currentSession.current_candle_index + 1, candles.length);
   }, [currentSession, candles.length]);
 
-  // Оптимизированные сеттеры
+  // Оптимизированные сеттеры с правильными типами
   const updateCandles = useCallback((updater: (prev: CandleData[]) => CandleData[]) => {
     setCandles(updater);
   }, []);
