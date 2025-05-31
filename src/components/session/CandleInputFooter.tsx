@@ -11,6 +11,7 @@ interface CandleInputFooterProps {
   onSave: () => void;
   candles: CandleData[];
   onDeleteLastCandle?: () => void;
+  lastCandle?: CandleData | null;
 }
 
 const CandleInputFooter = ({ 
@@ -19,9 +20,12 @@ const CandleInputFooter = ({
   isSubmitting, 
   onSave, 
   candles,
-  onDeleteLastCandle 
+  onDeleteLastCandle,
+  lastCandle 
 }: CandleInputFooterProps) => {
-  const lastCandle = candles.length > 0 ? candles[candles.length - 1] : null;
+  const averageVolume = candles.length > 0 
+    ? candles.reduce((sum, c) => sum + c.volume, 0) / candles.length
+    : 0;
 
   return (
     <>
@@ -43,6 +47,7 @@ const CandleInputFooter = ({
               variant="destructive"
               size="sm"
               className="bg-red-600 hover:bg-red-700"
+              disabled={isSubmitting}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Удалить последнюю
@@ -67,13 +72,13 @@ const CandleInputFooter = ({
               <span className="text-slate-300">Сохранено свечей:</span> {candles.length}
             </div>
             <div>
-              <span className="text-slate-300">Последняя цена:</span> {lastCandle?.close || 'N/A'}
+              <span className="text-slate-300">Последняя цена:</span> {
+                lastCandle ? lastCandle.close.toFixed(5) : 'N/A'
+              }
             </div>
             <div>
               <span className="text-slate-300">Средний объем:</span> {
-                candles.length > 0 
-                  ? (candles.reduce((sum, c) => sum + c.volume, 0) / candles.length).toFixed(0)
-                  : 'N/A'
+                averageVolume > 0 ? averageVolume.toFixed(0) : 'N/A'
               }
             </div>
           </div>

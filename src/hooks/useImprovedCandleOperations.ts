@@ -12,7 +12,7 @@ export const useImprovedCandleOperations = (
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void,
   setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void
 ) => {
-  const { handleAsyncError, withErrorBoundary } = useErrorHandler();
+  const { handleAsyncError, addError } = useErrorHandler();
 
   const saveCandle = useCallback(async (candleData: Omit<CandleData, 'id' | 'candle_datetime'>) => {
     if (!currentSession) {
@@ -77,17 +77,19 @@ export const useImprovedCandleOperations = (
   const getNextCandleTime = useCallback((candleIndex: number): string => {
     if (!currentSession) return '';
     
-    const result = withErrorBoundary(() => {
+    try {
       return calculateCandleDateTime(
         currentSession.start_date,
         currentSession.start_time,
         currentSession.timeframe,
         candleIndex
       );
-    }, 'Ошибка расчета времени свечи');
-    
-    return result || '';
-  }, [currentSession, withErrorBoundary]);
+    } catch (error) {
+      console.error('Error calculating candle time:', error);
+      addError('Ошибка расчета времени свечи');
+      return '';
+    }
+  }, [currentSession, addError]);
 
   const deleteCandle = useCallback(async (candleIndex: number) => {
     if (!currentSession) {

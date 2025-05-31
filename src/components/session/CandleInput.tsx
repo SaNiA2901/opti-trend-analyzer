@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTradingSession } from '@/hooks/useTradingSession';
 import { validateFormData } from '@/utils/candleValidation';
@@ -44,7 +44,15 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  const nextCandleTime = currentSession ? getNextCandleTime(nextCandleIndex) : '';
+  // Мемоизируем время следующей свечи
+  const nextCandleTime = useMemo(() => {
+    return currentSession ? getNextCandleTime(nextCandleIndex) : '';
+  }, [currentSession, getNextCandleTime, nextCandleIndex]);
+
+  // Мемоизируем последнюю свечу
+  const lastCandle = useMemo(() => {
+    return candles.length > 0 ? candles[candles.length - 1] : null;
+  }, [candles]);
 
   const parseNumber = useCallback((value: string): number => {
     const parsed = parseFloat(value);
@@ -56,21 +64,45 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       ...prev,
       [field]: value
     }));
+    
+    // Очищаем ошибки валидации при изменении полей
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  }, [validationErrors.length]);
+
+  const resetForm = useCallback((keepOpen: boolean = true) => {
+    setCandleData({
+      open: keepOpen ? candleData.close : '',
+      high: '',
+      low: '',
+      close: '',
+      volume: ''
+    });
     setValidationErrors([]);
-  }, []);
+  }, [candleData.close]);
 
   const handleSave = useCallback(async () => {
     if (!currentSession) {
       const error = 'Нет активной сессии для сохранения данных';
       setValidationErrors([error]);
-      addError(error);
+      addError(error, undefined, { source: 'candle-input' });
       return;
     }
 
+    // Валидация формы
     const validation = validateFormData(candleData);
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
+      console.log('Validation errors:', validation.errors);
       return;
+    }
+
+    // Показываем предупреждения, если есть
+    if (validation.warnings && validation.warnings.length > 0) {
+      validation.warnings.forEach(warning => {
+        console.warn('Validation warning:', warning);
+      });
     }
 
     const numericData = {
@@ -89,53 +121,55 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         ...numericData
       });
 
-      console.log('Candle saved successfully:', savedCandle);
-      onCandleSaved(savedCandle);
-      
-      // Автозаполнение следующей свечи
-      setCandleData({
-        open: candleData.close,
-        high: '',
-        low: '',
-        close: '',
-        volume: ''
-      });
-      setValidationErrors([]);
+      if (savedCandle) {
+        console.log('Candle saved successfully:', savedCandle);
+        onCandleSaved(savedCandle);
+        
+        // Автозаполнение следующей свечи
+        resetForm(true);
+      }
     } catch (error) {
       console.error('Error saving candle:', error);
       const errorMessage = error instanceof Error ? error.message : 'Ошибка сохранения';
       setValidationErrors([errorMessage]);
-      addError(errorMessage);
+      addError(errorMessage, undefined, { source: 'candle-input' });
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentSession, candleData, nextCandleIndex, saveCandle, onCandleSaved, parseNumber, addError]);
+  }, [currentSession, candleData, nextCandleIndex, saveCandle, onCandleSaved, parseNumber, addError, resetForm]);
 
   const handleDeleteLastCandle = useCallback(async () => {
-    if (!currentSession || candles.length === 0) return;
+    if (!currentSession || !lastCandle) {
+      console.warn('Cannot delete: no session or no candles');
+      return;
+    }
 
-    const lastCandle = candles[candles.length - 1];
     try {
       await deleteCandle(lastCandle.candle_index);
       console.log('Last candle deleted successfully');
+      
+      // Очищаем форму при удалении последней свечи
+      resetForm(false);
     } catch (error) {
       console.error('Error deleting last candle:', error);
-      addError('Ошибка удаления последней свечи');
+      addError('Ошибка удаления последней свечи', undefined, { source: 'candle-input' });
     }
-  }, [currentSession, candles, deleteCandle, addError]);
+  }, [currentSession, lastCandle, deleteCandle, addError, resetForm]);
 
   // Автозаполнение цены открытия на основе последней свечи
   useEffect(() => {
-    if (candles.length > 0 && !candleData.open) {
-      const lastCandle = candles[candles.length - 1];
+    if (lastCandle && !candleData.open) {
       setCandleData(prev => ({
         ...prev,
         open: lastCandle.close.toString()
       }));
     }
-  }, [candles, candleData.open]);
+  }, [lastCandle, candleData.open]);
 
-  const isFormValid = Object.values(candleData).every(value => value.trim() !== '');
+  // Мемоизируем проверку валидности формы
+  const isFormValid = useMemo(() => {
+    return Object.values(candleData).every(value => value.trim() !== '');
+  }, [candleData]);
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
@@ -171,6 +205,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
         onSave={handleSave}
         candles={candles}
         onDeleteLastCandle={handleDeleteLastCandle}
+        lastCandle={lastCandle}
       />
     </Card>
   );
