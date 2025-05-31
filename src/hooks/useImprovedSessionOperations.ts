@@ -35,12 +35,21 @@ export const useImprovedSessionOperations = (
     start_date: string;
     start_time: string;
   }) => {
-    // Валидация входных данных
-    if (!sessionData.session_name.trim()) {
+    // Валидация входных данных на фронтенде
+    if (!sessionData.session_name?.trim()) {
       throw new Error('Название сессии не может быть пустым');
     }
-    if (!sessionData.pair.trim()) {
+    if (!sessionData.pair?.trim()) {
       throw new Error('Валютная пара должна быть указана');
+    }
+    if (!sessionData.timeframe?.trim()) {
+      throw new Error('Таймфрейм должен быть указан');
+    }
+    if (!sessionData.start_date?.trim()) {
+      throw new Error('Дата начала должна быть указана');
+    }
+    if (!sessionData.start_time?.trim()) {
+      throw new Error('Время начала должно быть указано');
     }
 
     setIsLoading(true);
@@ -64,7 +73,7 @@ export const useImprovedSessionOperations = (
   }, [setIsLoading, setCurrentSession, setCandles, loadSessions, handleAsyncError]);
 
   const loadSession = useCallback(async (sessionId: string) => {
-    if (!sessionId) {
+    if (!sessionId?.trim()) {
       throw new Error('ID сессии не может быть пустым');
     }
 
@@ -90,7 +99,7 @@ export const useImprovedSessionOperations = (
   }, [setIsLoading, setCurrentSession, setCandles, handleAsyncError]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
-    if (!sessionId) {
+    if (!sessionId?.trim()) {
       throw new Error('ID сессии не может быть пустым');
     }
 
@@ -101,12 +110,16 @@ export const useImprovedSessionOperations = (
         'Ошибка удаления сессии'
       );
       
+      // Сбрасываем текущую сессию если она была удалена
+      setCurrentSession(prev => prev?.id === sessionId ? null : prev);
+      setCandles(() => []);
+      
       await loadSessions();
       console.log('Session deleted successfully:', sessionId);
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, loadSessions, handleAsyncError]);
+  }, [setIsLoading, setCurrentSession, setCandles, loadSessions, handleAsyncError]);
 
   return {
     loadSessions,

@@ -55,7 +55,7 @@ export const useImprovedCandleOperations = (
         'Ошибка обновления индекса сессии'
       );
 
-      // Обновляем локальное состояние
+      // Обновляем локальное состояние с проверкой
       setCandles(prev => {
         const filtered = prev.filter(c => c.candle_index !== candleData.candle_index);
         return [...filtered, savedCandle].sort((a, b) => a.candle_index - b.candle_index);
@@ -75,7 +75,15 @@ export const useImprovedCandleOperations = (
   }, [currentSession, setCandles, setCurrentSession, handleAsyncError]);
 
   const getNextCandleTime = useCallback((candleIndex: number): string => {
-    if (!currentSession) return '';
+    if (!currentSession) {
+      console.warn('No current session available for time calculation');
+      return '';
+    }
+    
+    if (typeof candleIndex !== 'number' || candleIndex < 0) {
+      addError('Некорректный индекс свечи для расчета времени');
+      return '';
+    }
     
     try {
       return calculateCandleDateTime(
@@ -95,6 +103,10 @@ export const useImprovedCandleOperations = (
     if (!currentSession) {
       throw new Error('Нет активной сессии');
     }
+    
+    if (typeof candleIndex !== 'number' || candleIndex < 0) {
+      throw new Error('Некорректный индекс свечи для удаления');
+    }
 
     try {
       await handleAsyncError(
@@ -102,6 +114,7 @@ export const useImprovedCandleOperations = (
         'Ошибка удаления свечи'
       );
 
+      // Обновляем локальное состояние
       setCandles(prev => prev.filter(c => c.candle_index !== candleIndex));
       console.log('Candle deleted successfully:', candleIndex);
     } catch (error) {
@@ -113,6 +126,14 @@ export const useImprovedCandleOperations = (
   const updateCandle = useCallback(async (candleIndex: number, updatedData: Partial<CandleData>) => {
     if (!currentSession) {
       throw new Error('Нет активной сессии');
+    }
+    
+    if (typeof candleIndex !== 'number' || candleIndex < 0) {
+      throw new Error('Некорректный индекс свечи для обновления');
+    }
+    
+    if (!updatedData || Object.keys(updatedData).length === 0) {
+      throw new Error('Нет данных для обновления');
     }
 
     try {

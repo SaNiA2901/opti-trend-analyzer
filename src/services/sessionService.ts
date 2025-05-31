@@ -9,7 +9,11 @@ export const sessionService = {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error loading sessions:', error);
+      throw new Error(`Failed to load sessions: ${error.message}`);
+    }
+    
     return data || [];
   },
 
@@ -20,8 +24,25 @@ export const sessionService = {
     start_date: string;
     start_time: string;
   }): Promise<TradingSession> {
+    // Валидация входных данных
     if (!sessionData.session_name?.trim()) {
-      throw new Error('Session name is required');
+      throw new Error('Session name is required and cannot be empty');
+    }
+    
+    if (!sessionData.pair?.trim()) {
+      throw new Error('Trading pair is required');
+    }
+    
+    if (!sessionData.timeframe?.trim()) {
+      throw new Error('Timeframe is required');
+    }
+    
+    if (!sessionData.start_date?.trim()) {
+      throw new Error('Start date is required');
+    }
+    
+    if (!sessionData.start_time?.trim()) {
+      throw new Error('Start time is required');
     }
 
     const { data, error } = await supabase
@@ -33,13 +54,21 @@ export const sessionService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating session:', error);
+      throw new Error(`Failed to create session: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned from session creation');
+    }
+    
     return data;
   },
 
   async loadSessionWithCandles(sessionId: string) {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
 
     const [sessionResult, candlesResult] = await Promise.all([
@@ -55,8 +84,19 @@ export const sessionService = {
         .order('candle_index', { ascending: true })
     ]);
 
-    if (sessionResult.error) throw sessionResult.error;
-    if (candlesResult.error) throw candlesResult.error;
+    if (sessionResult.error) {
+      console.error('Error loading session:', sessionResult.error);
+      throw new Error(`Failed to load session: ${sessionResult.error.message}`);
+    }
+    
+    if (candlesResult.error) {
+      console.error('Error loading candles:', candlesResult.error);
+      throw new Error(`Failed to load candles: ${candlesResult.error.message}`);
+    }
+    
+    if (!sessionResult.data) {
+      throw new Error('Session not found');
+    }
 
     return {
       session: sessionResult.data,
@@ -65,6 +105,14 @@ export const sessionService = {
   },
 
   async updateSessionCandleIndex(sessionId: string, candleIndex: number): Promise<void> {
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required');
+    }
+    
+    if (typeof candleIndex !== 'number' || candleIndex < 0) {
+      throw new Error('Valid candle index is required');
+    }
+
     const { error } = await supabase
       .from('trading_sessions')
       .update({ 
@@ -73,34 +121,36 @@ export const sessionService = {
       })
       .eq('id', sessionId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating session candle index:', error);
+      throw new Error(`Failed to update session: ${error.message}`);
+    }
   },
 
   async deleteSession(sessionId: string): Promise<void> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
 
-    // Сначала удаляем все свечи сессии
-    const { error: candlesError } = await supabase
-      .from('candle_data')
-      .delete()
-      .eq('session_id', sessionId);
-
-    if (candlesError) throw candlesError;
-
-    // Затем удаляем саму сессию
+    // Каскадное удаление настроено в базе данных, поэтому удаляем только сессию
     const { error: sessionError } = await supabase
       .from('trading_sessions')
       .delete()
       .eq('id', sessionId);
 
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+      console.error('Error deleting session:', sessionError);
+      throw new Error(`Failed to delete session: ${sessionError.message}`);
+    }
   },
 
   async duplicateSession(sessionId: string, newName: string): Promise<TradingSession> {
-    if (!sessionId) {
+    if (!sessionId?.trim()) {
       throw new Error('Session ID is required');
+    }
+    
+    if (!newName?.trim()) {
+      throw new Error('New session name is required');
     }
 
     const { data: originalSession, error } = await supabase
@@ -109,12 +159,19 @@ export const sessionService = {
       .eq('id', sessionId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching original session:', error);
+      throw new Error(`Failed to fetch original session: ${error.message}`);
+    }
+    
+    if (!originalSession) {
+      throw new Error('Original session not found');
+    }
 
     const { data: newSession, error: createError } = await supabase
       .from('trading_sessions')
       .insert([{
-        session_name: newName,
+        session_name: newName.trim(),
         pair: originalSession.pair,
         timeframe: originalSession.timeframe,
         start_date: originalSession.start_date,
@@ -124,7 +181,15 @@ export const sessionService = {
       .select()
       .single();
 
-    if (createError) throw createError;
+    if (createError) {
+      console.error('Error creating duplicate session:', createError);
+      throw new Error(`Failed to create duplicate session: ${createError.message}`);
+    }
+    
+    if (!newSession) {
+      throw new Error('No data returned from session duplication');
+    }
+    
     return newSession;
   }
 };
