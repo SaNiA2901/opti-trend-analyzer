@@ -25,27 +25,28 @@ export const useCandleForm = () => {
     return isNaN(parsed) ? 0 : parsed;
   }, []);
 
-  const updateField = useCallback((field: string, value: string) => {
+  const updateField = useCallback((field: keyof CandleFormData, value: string) => {
     setCandleData(prev => ({
       ...prev,
       [field]: value
     }));
     
+    // Очищаем ошибки при изменении поля
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
   }, [validationErrors.length]);
 
   const resetForm = useCallback((keepOpen: boolean = true) => {
-    setCandleData({
-      open: keepOpen ? candleData.close : '',
+    setCandleData(prev => ({
+      open: keepOpen ? prev.close : '',
       high: '',
       low: '',
       close: '',
       volume: ''
-    });
+    }));
     setValidationErrors([]);
-  }, [candleData.close]);
+  }, []);
 
   const validateForm = useCallback(() => {
     const validation = validateFormData(candleData);
@@ -60,6 +61,7 @@ export const useCandleForm = () => {
       });
     }
     
+    setValidationErrors([]);
     return true;
   }, [candleData]);
 

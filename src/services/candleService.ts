@@ -4,9 +4,13 @@ import { CandleData } from '@/hooks/useTradingSession';
 
 export const candleService = {
   async saveCandle(candleData: Omit<CandleData, 'id'>): Promise<CandleData> {
-    // Проверяем существование сессии перед сохранением
+    // Проверяем обязательные поля
     if (!candleData.session_id) {
       throw new Error('Session ID is required for saving candle data');
+    }
+
+    if (typeof candleData.candle_index !== 'number' || candleData.candle_index < 0) {
+      throw new Error('Valid candle index is required');
     }
 
     const { data, error } = await supabase
@@ -31,8 +35,8 @@ export const candleService = {
   },
 
   async getCandlesForSession(sessionId: string): Promise<CandleData[]> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
 
     const { data, error } = await supabase
@@ -50,8 +54,8 @@ export const candleService = {
   },
 
   async deleteCandle(sessionId: string, candleIndex: number): Promise<void> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
     
     if (typeof candleIndex !== 'number' || candleIndex < 0) {
@@ -71,12 +75,16 @@ export const candleService = {
   },
 
   async updateCandle(sessionId: string, candleIndex: number, updatedData: Partial<CandleData>): Promise<CandleData> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
     
     if (typeof candleIndex !== 'number' || candleIndex < 0) {
       throw new Error('Valid candle index is required');
+    }
+
+    if (!updatedData || Object.keys(updatedData).length === 0) {
+      throw new Error('Updated data is required');
     }
 
     const { data, error } = await supabase
@@ -100,8 +108,8 @@ export const candleService = {
   },
 
   async getCandleByIndex(sessionId: string, candleIndex: number): Promise<CandleData | null> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
     
     if (typeof candleIndex !== 'number' || candleIndex < 0) {
@@ -124,8 +132,8 @@ export const candleService = {
   },
 
   async getLatestCandles(sessionId: string, limit: number = 10): Promise<CandleData[]> {
-    if (!sessionId) {
-      throw new Error('Session ID is required');
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
     }
     
     if (typeof limit !== 'number' || limit <= 0) {

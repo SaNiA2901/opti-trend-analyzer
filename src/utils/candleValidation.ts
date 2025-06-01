@@ -30,6 +30,26 @@ interface ValidationResult {
   warnings?: string[];
 }
 
+// Функция для санитизации числового ввода
+export const sanitizeNumericInput = (value: string): string => {
+  // Убираем все символы кроме цифр, точки и минуса
+  const sanitized = value.replace(/[^0-9.-]/g, '');
+  
+  // Проверяем, что есть только одна точка
+  const parts = sanitized.split('.');
+  if (parts.length > 2) {
+    return parts[0] + '.' + parts.slice(1).join('');
+  }
+  
+  // Проверяем, что минус только в начале
+  const minusCount = (sanitized.match(/-/g) || []).length;
+  if (minusCount > 1) {
+    return sanitized.replace(/-/g, '').replace(/^/, sanitized.startsWith('-') ? '-' : '');
+  }
+  
+  return sanitized;
+};
+
 export const validateFormData = (data: CandleFormData): ValidationResult => {
   let errors: string[] = [];
   let warnings: string[] = [];

@@ -18,11 +18,11 @@ interface CandleNumericData {
 export const validateRequiredFields = (data: CandleFormData): string[] => {
   const errors: string[] = [];
   
-  if (!data.open.trim()) errors.push('Цена открытия обязательна');
-  if (!data.high.trim()) errors.push('Максимальная цена обязательна');
-  if (!data.low.trim()) errors.push('Минимальная цена обязательна');
-  if (!data.close.trim()) errors.push('Цена закрытия обязательна');
-  if (!data.volume.trim()) errors.push('Объем обязателен');
+  if (!data.open?.trim()) errors.push('Цена открытия обязательна');
+  if (!data.high?.trim()) errors.push('Максимальная цена обязательна');
+  if (!data.low?.trim()) errors.push('Минимальная цена обязательна');
+  if (!data.close?.trim()) errors.push('Цена закрытия обязательна');
+  if (!data.volume?.trim()) errors.push('Объем обязателен');
   
   return errors;
 };
@@ -47,7 +47,6 @@ export const validateNumericValues = (data: CandleFormData): string[] => {
 
 export const validatePriceLogic = (data: CandleNumericData): string[] => {
   const errors: string[] = [];
-  const warnings: string[] = [];
   
   // High должен быть максимальным
   if (data.high < Math.max(data.open, data.close)) {
@@ -62,15 +61,6 @@ export const validatePriceLogic = (data: CandleNumericData): string[] => {
   // High должен быть >= Low
   if (data.high < data.low) {
     errors.push('Максимальная цена не может быть меньше минимальной');
-  }
-  
-  // Предупреждения
-  if (data.high === data.low) {
-    warnings.push('Максимальная и минимальная цены равны (отсутствие волатильности)');
-  }
-  
-  if (data.open === data.close) {
-    warnings.push('Цены открытия и закрытия равны (doji-свеча)');
   }
   
   return errors;
