@@ -39,14 +39,26 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Debug logging
+  console.log('CandleInput: currentSession =', currentSession?.id || 'null');
+  console.log('CandleInput: candles count =', candles.length);
+
   // Мемоизируем время следующей свечи
   const nextCandleTime = useMemo(() => {
-    return currentSession ? getNextCandleTime(nextCandleIndex) : '';
+    if (!currentSession) {
+      console.log('CandleInput: No current session for time calculation');
+      return '';
+    }
+    const time = getNextCandleTime(nextCandleIndex);
+    console.log('CandleInput: Next candle time calculated:', time);
+    return time;
   }, [currentSession, getNextCandleTime, nextCandleIndex]);
 
   // Мемоизируем последнюю свечу
   const lastCandle = useMemo(() => {
-    return candles.length > 0 ? candles[candles.length - 1] : null;
+    const last = candles.length > 0 ? candles[candles.length - 1] : null;
+    console.log('CandleInput: Last candle:', last?.candle_index || 'none');
+    return last;
   }, [candles]);
 
   const handleSave = useCallback(async () => {
@@ -58,10 +70,12 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     }
 
     if (!validateForm()) {
+      console.log('CandleInput: Form validation failed');
       return;
     }
 
     const numericData = getNumericData();
+    console.log('CandleInput: Saving candle with data:', numericData);
 
     setIsSubmitting(true);
     try {
@@ -72,12 +86,12 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       });
 
       if (savedCandle) {
-        console.log('Candle saved successfully:', savedCandle);
+        console.log('CandleInput: Candle saved successfully:', savedCandle);
         onCandleSaved(savedCandle);
         resetForm(true);
       }
     } catch (error) {
-      console.error('Error saving candle:', error);
+      console.error('CandleInput: Error saving candle:', error);
       const errorMessage = error instanceof Error ? error.message : 'Ошибка сохранения';
       setValidationErrors([errorMessage]);
       addError(errorMessage, undefined, { source: 'candle-input' });
@@ -88,16 +102,17 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
 
   const handleDeleteLastCandle = useCallback(async () => {
     if (!currentSession || !lastCandle) {
-      console.warn('Cannot delete: no session or no candles');
+      console.warn('CandleInput: Cannot delete - no session or no candles');
       return;
     }
 
     try {
+      console.log('CandleInput: Deleting last candle:', lastCandle.candle_index);
       await deleteCandle(lastCandle.candle_index);
-      console.log('Last candle deleted successfully');
+      console.log('CandleInput: Last candle deleted successfully');
       resetForm(false);
     } catch (error) {
-      console.error('Error deleting last candle:', error);
+      console.error('CandleInput: Error deleting last candle:', error);
       addError('Ошибка удаления последней свечи', undefined, { source: 'candle-input' });
     }
   }, [currentSession, lastCandle, deleteCandle, addError, resetForm]);
@@ -105,6 +120,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
   // Автозаполнение цены открытия на основе последней свечи
   useEffect(() => {
     if (lastCandle && !candleData.open) {
+      console.log('CandleInput: Auto-filling open price from last candle:', lastCandle.close);
       setCandleData(prev => ({
         ...prev,
         open: lastCandle.close.toString()

@@ -16,7 +16,9 @@ export const useSessionNavigation = (
       throw new Error('ID сессии не может быть пустым');
     }
 
+    console.log('useSessionNavigation: Loading session:', sessionId);
     setIsLoading(true);
+    
     try {
       const result = await handleAsyncError(
         () => sessionService.loadSessionWithCandles(sessionId),
@@ -25,11 +27,21 @@ export const useSessionNavigation = (
       );
 
       if (result) {
-        console.log('Session loaded successfully:', result.session.id);
-        console.log('Candles loaded:', result.candles.length);
+        console.log('useSessionNavigation: Session loaded successfully:', result.session.id);
+        console.log('useSessionNavigation: Candles loaded:', result.candles.length);
+        console.log('useSessionNavigation: Setting current session to:', result.session);
         
-        setCurrentSession(() => result.session);
-        setCandles(() => result.candles);
+        // Обновляем состояние синхронно
+        setCurrentSession(() => {
+          console.log('useSessionNavigation: Current session setter called with:', result.session);
+          return result.session;
+        });
+        
+        setCandles(() => {
+          console.log('useSessionNavigation: Candles setter called with:', result.candles.length, 'candles');
+          return result.candles;
+        });
+        
         return result.session;
       }
       throw new Error('Не удалось загрузить сессию');

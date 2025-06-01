@@ -29,7 +29,9 @@ export const useSessionCreation = (
       }
     }
 
+    console.log('useSessionCreation: Creating session with data:', sessionData);
     setIsLoading(true);
+    
     try {
       const session = await handleAsyncError(
         () => sessionService.createSession(sessionData),
@@ -38,9 +40,22 @@ export const useSessionCreation = (
       );
       
       if (session) {
-        console.log('Session created successfully:', session.id);
-        setCurrentSession(() => session);
-        setCandles(() => []);
+        console.log('useSessionCreation: Session created successfully:', session.id);
+        console.log('useSessionCreation: Setting as current session:', session);
+        
+        // Устанавливаем созданную сессию как текущую
+        setCurrentSession(() => {
+          console.log('useSessionCreation: Current session setter called with:', session);
+          return session;
+        });
+        
+        // Очищаем свечи для новой сессии
+        setCandles(() => {
+          console.log('useSessionCreation: Clearing candles for new session');
+          return [];
+        });
+        
+        // Перезагружаем список сессий
         await loadSessions();
         return session;
       }

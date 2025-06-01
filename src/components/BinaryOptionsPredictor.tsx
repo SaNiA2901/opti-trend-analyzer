@@ -32,8 +32,9 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     predictionConfig
   });
 
+  // Debug logging
   console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
-  console.log('BinaryOptionsPredictor: candles.length =', candles.length);
+  console.log('BinaryOptionsPredictor: candles count =', candles.length);
 
   return (
     <div className="space-y-6">

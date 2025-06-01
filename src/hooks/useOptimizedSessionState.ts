@@ -20,6 +20,22 @@ export const useOptimizedSessionState = () => {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug logging для отслеживания состояния
+  const debugSetCurrentSession = useCallback((updater: TradingSession | null | SessionUpdater) => {
+    console.log('useOptimizedSessionState: setCurrentSession called with:', typeof updater === 'function' ? 'function' : updater);
+    
+    if (typeof updater === 'function') {
+      setCurrentSession(prev => {
+        const newSession = updater(prev);
+        console.log('useOptimizedSessionState: Session updated from', prev?.id || 'null', 'to', newSession?.id || 'null');
+        return newSession;
+      });
+    } else {
+      console.log('useOptimizedSessionState: Setting session directly to:', updater?.id || 'null');
+      setCurrentSession(updater);
+    }
+  }, []);
+
   // Мемоизированные селекторы для предотвращения лишних re-renders
   const sessionStats = useMemo((): SessionStats => {
     if (!currentSession || candles.length === 0) {
@@ -68,14 +84,6 @@ export const useOptimizedSessionState = () => {
     }
   }, []);
 
-  const updateCurrentSession = useCallback((updater: TradingSession | null | SessionUpdater) => {
-    if (typeof updater === 'function') {
-      setCurrentSession(updater);
-    } else {
-      setCurrentSession(updater);
-    }
-  }, []);
-
   const resetState = useCallback(() => {
     setCurrentSession(null);
     setCandles([]);
@@ -84,7 +92,7 @@ export const useOptimizedSessionState = () => {
 
   return {
     currentSession,
-    setCurrentSession: updateCurrentSession,
+    setCurrentSession: debugSetCurrentSession,
     sessions,
     setSessions,
     candles,

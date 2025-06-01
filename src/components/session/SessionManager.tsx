@@ -18,8 +18,10 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { handleCreateSession, handleLoadSession } = useSessionManager(setShowCreateForm);
   
-  console.log('SessionManager: rendered, currentSession =', currentSession?.id || 'null');
-  console.log('SessionManager: sessions =', sessions.length);
+  // Debug logging for state tracking
+  console.log('SessionManager: currentSession =', currentSession?.id || 'null');
+  console.log('SessionManager: currentSession object =', currentSession);
+  console.log('SessionManager: sessions count =', sessions.length);
 
   return (
     <Card className="p-6 bg-slate-800/50 border-slate-700">
