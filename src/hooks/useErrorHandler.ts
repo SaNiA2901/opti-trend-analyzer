@@ -15,7 +15,19 @@ export interface ErrorHandlerOptions {
   source?: string;
 }
 
-export const useErrorHandler = () => {
+interface ErrorHandlerReturn {
+  errors: ErrorState[];
+  addError: (message: string, code?: string, options?: ErrorHandlerOptions) => void;
+  clearError: (index: number) => void;
+  clearAllErrors: () => void;
+  clearErrorsBySource: (source: string) => void;
+  handleAsyncError: <T>(operation: () => Promise<T>, errorMessage?: string, options?: ErrorHandlerOptions) => Promise<T | null>;
+  withErrorBoundary: <T extends any[], R>(fn: (...args: T) => R, errorMessage?: string, options?: ErrorHandlerOptions) => (...args: T) => R | null;
+  handleSyncError: (error: unknown, fallbackMessage?: string, options?: ErrorHandlerOptions) => void;
+  getRecentErrors: (minutes?: number) => ErrorState[];
+}
+
+export const useErrorHandler = (): ErrorHandlerReturn => {
   const [errors, setErrors] = useState<ErrorState[]>([]);
 
   const addError = useCallback((

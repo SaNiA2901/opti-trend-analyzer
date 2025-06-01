@@ -1,4 +1,3 @@
-
 export const parseTimeframe = (timeframe: string): number => {
   const timeframeMap: Record<string, number> = {
     '1m': 1,
@@ -49,16 +48,38 @@ export const calculateCandleDateTime = (
   timeframe: string,
   candleIndex: number
 ): string => {
-  if (!startDate || !startTime || !timeframe) {
-    throw new Error('Отсутствуют обязательные параметры для расчета времени свечи');
+  if (!startDate?.trim()) {
+    throw new Error('Дата начала не может быть пустой');
   }
   
-  if (typeof candleIndex !== 'number' || candleIndex < 0) {
-    throw new Error('Индекс свечи должен быть неотрицательным числом');
+  if (!startTime?.trim()) {
+    throw new Error('Время начала не может быть пустым');
+  }
+  
+  if (!timeframe?.trim()) {
+    throw new Error('Таймфрейм не может быть пустым');
+  }
+  
+  if (typeof candleIndex !== 'number' || candleIndex < 0 || !Number.isInteger(candleIndex)) {
+    throw new Error('Индекс свечи должен быть неотрицательным целым числом');
   }
   
   try {
-    const startDateTime = new Date(`${startDate}T${startTime}`);
+    // Проверяем формат даты
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      throw new Error('Дата должна быть в формате YYYY-MM-DD');
+    }
+    
+    // Проверяем формат времени
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(startTime)) {
+      throw new Error('Время должно быть в формате HH:MM или HH:MM:SS');
+    }
+    
+    // Нормализуем время (добавляем секунды если их нет)
+    const normalizedTime = startTime.length === 5 ? `${startTime}:00` : startTime;
+    
+    const startDateTime = new Date(`${startDate}T${normalizedTime}`);
+    
     if (isNaN(startDateTime.getTime())) {
       throw new Error('Невалидная дата или время начала');
     }
@@ -66,9 +87,50 @@ export const calculateCandleDateTime = (
     const minutes = parseTimeframe(timeframe) * candleIndex;
     const candleDateTime = new Date(startDateTime.getTime() + minutes * 60000);
     
+    if (isNaN(candleDateTime.getTime())) {
+      throw new Error('Ошибка при расчете времени свечи');
+    }
+    
     return candleDateTime.toISOString();
   } catch (error) {
     console.error('Error calculating candle time:', error);
-    throw new Error(`Ошибка расчета времени свечи: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Ошибка расчета времени свечи: Неизвестная ошибка`);
   }
+};
+
+export const validateTimeParameters = (startDate: string, startTime: string, timeframe: string): {
+  isValid: boolean;
+  errors: string[];
+} => {
+  const errors: string[] = [];
+  
+  if (!startDate?.trim()) {
+    errors.push('Дата начала обязательна');
+  } else if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+    errors.push('Дата должна быть в формате YYYY-MM-DD');
+  }
+  
+  if (!startTime?.trim()) {
+    errors.push('Время начала обязательно');
+  } else if (!/^\d{2}:\d{2}(:\d{2})?$/.test(startTime)) {
+    errors.push('Время должно быть в формате HH:MM или HH:MM:SS');
+  }
+  
+  if (!timeframe?.trim()) {
+    errors.push('Таймфрейм обязателен');
+  } else {
+    try {
+      parseTimeframe(timeframe);
+    } catch (error) {
+      errors.push('Неподдерживаемый таймфрейм');
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };

@@ -58,9 +58,25 @@ export const useTradingSession = () => {
     updateCandle
   } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
-  // Загрузка сессий при инициализации
+  // Загрузка сессий при инициализации с улучшенной обработкой ошибок
   useEffect(() => {
-    loadSessions();
+    let isMounted = true;
+    
+    const initializeSessions = async () => {
+      try {
+        if (isMounted) {
+          await loadSessions();
+        }
+      } catch (error) {
+        console.error('Failed to initialize sessions:', error);
+      }
+    };
+    
+    initializeSessions();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [loadSessions]);
 
   return {

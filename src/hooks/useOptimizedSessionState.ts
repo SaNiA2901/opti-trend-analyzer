@@ -11,6 +11,9 @@ interface SessionStats {
   averageVolume: number;
 }
 
+type SessionUpdater = (prev: TradingSession | null) => TradingSession | null;
+type CandlesUpdater = (prev: CandleData[]) => CandleData[];
+
 export const useOptimizedSessionState = () => {
   const [currentSession, setCurrentSession] = useState<TradingSession | null>(null);
   const [sessions, setSessions] = useState<TradingSession[]>([]);
@@ -56,20 +59,20 @@ export const useOptimizedSessionState = () => {
     return Math.max(currentSession.current_candle_index + 1, candles.length);
   }, [currentSession, candles.length]);
 
-  // Исправленные сеттеры с правильными типами
-  const updateCandles = useCallback((candlesOrUpdater: CandleData[] | ((prev: CandleData[]) => CandleData[])) => {
-    if (typeof candlesOrUpdater === 'function') {
-      setCandles(candlesOrUpdater);
+  // Типизированные сеттеры
+  const updateCandles = useCallback((updater: CandleData[] | CandlesUpdater) => {
+    if (typeof updater === 'function') {
+      setCandles(updater);
     } else {
-      setCandles(candlesOrUpdater);
+      setCandles(updater);
     }
   }, []);
 
-  const updateCurrentSession = useCallback((sessionOrUpdater: TradingSession | null | ((prev: TradingSession | null) => TradingSession | null)) => {
-    if (typeof sessionOrUpdater === 'function') {
-      setCurrentSession(sessionOrUpdater);
+  const updateCurrentSession = useCallback((updater: TradingSession | null | SessionUpdater) => {
+    if (typeof updater === 'function') {
+      setCurrentSession(updater);
     } else {
-      setCurrentSession(sessionOrUpdater);
+      setCurrentSession(updater);
     }
   }, []);
 

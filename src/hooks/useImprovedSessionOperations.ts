@@ -1,8 +1,8 @@
 
-import { useCallback } from 'react';
-import { sessionService } from '@/services/sessionService';
 import { TradingSession, CandleData } from './useTradingSession';
-import { useErrorHandler } from './useErrorHandler';
+import { useSessionLoading } from './session/useSessionLoading';
+import { useSessionCreation } from './session/useSessionCreation';
+import { useSessionNavigation } from './session/useSessionNavigation';
 
 export const useImprovedSessionOperations = (
   setIsLoading: (loading: boolean) => void,
@@ -10,121 +10,13 @@ export const useImprovedSessionOperations = (
   setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void,
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void
 ) => {
-  const { handleAsyncError } = useErrorHandler();
-
-  const loadSessions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await handleAsyncError(
-        () => sessionService.loadSessions(),
-        'Ошибка загрузки сессий'
-      );
-      if (data) {
-        setSessions(data);
-        console.log('Sessions loaded successfully:', data.length);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setIsLoading, setSessions, handleAsyncError]);
-
-  const createSession = useCallback(async (sessionData: {
-    session_name: string;
-    pair: string;
-    timeframe: string;
-    start_date: string;
-    start_time: string;
-  }) => {
-    // Валидация входных данных на фронтенде
-    if (!sessionData.session_name?.trim()) {
-      throw new Error('Название сессии не может быть пустым');
-    }
-    if (!sessionData.pair?.trim()) {
-      throw new Error('Валютная пара должна быть указана');
-    }
-    if (!sessionData.timeframe?.trim()) {
-      throw new Error('Таймфрейм должен быть указан');
-    }
-    if (!sessionData.start_date?.trim()) {
-      throw new Error('Дата начала должна быть указана');
-    }
-    if (!sessionData.start_time?.trim()) {
-      throw new Error('Время начала должно быть указано');
-    }
-
-    setIsLoading(true);
-    try {
-      const session = await handleAsyncError(
-        () => sessionService.createSession(sessionData),
-        'Ошибка создания сессии'
-      );
-      
-      if (session) {
-        console.log('Session created successfully:', session.id);
-        setCurrentSession(() => session);
-        setCandles(() => []);
-        await loadSessions();
-        return session;
-      }
-      throw new Error('Не удалось создать сессию');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setIsLoading, setCurrentSession, setCandles, loadSessions, handleAsyncError]);
-
-  const loadSession = useCallback(async (sessionId: string) => {
-    if (!sessionId?.trim()) {
-      throw new Error('ID сессии не может быть пустым');
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await handleAsyncError(
-        () => sessionService.loadSessionWithCandles(sessionId),
-        'Ошибка загрузки сессии'
-      );
-
-      if (result) {
-        console.log('Session loaded successfully:', result.session.id);
-        console.log('Candles loaded:', result.candles.length);
-        
-        setCurrentSession(() => result.session);
-        setCandles(() => result.candles);
-        return result.session;
-      }
-      throw new Error('Не удалось загрузить сессию');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setIsLoading, setCurrentSession, setCandles, handleAsyncError]);
-
-  const deleteSession = useCallback(async (sessionId: string) => {
-    if (!sessionId?.trim()) {
-      throw new Error('ID сессии не может быть пустым');
-    }
-
-    setIsLoading(true);
-    try {
-      await handleAsyncError(
-        () => sessionService.deleteSession(sessionId),
-        'Ошибка удаления сессии'
-      );
-      
-      // Сбрасываем текущую сессию если она была удалена
-      setCurrentSession(prev => prev?.id === sessionId ? null : prev);
-      setCandles(() => []);
-      
-      await loadSessions();
-      console.log('Session deleted successfully:', sessionId);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setIsLoading, setCurrentSession, setCandles, loadSessions, handleAsyncError]);
+  const { loadSessions } = useSessionLoading(setIsLoading, setSessions);
+  const { createSession } = useSessionCreation(setIsLoading, setCurrentSession, setCandles, loadSessions);
+  const { loadSession } = useSessionNavigation(setIsLoading, setCurrentSession, setCandles);
 
   return {
     loadSessions,
     createSession,
-    loadSession,
-    deleteSession
+    loadSession
   };
 };
