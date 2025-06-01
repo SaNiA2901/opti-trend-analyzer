@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Plus } from 'lucide-react';
 import { useTradingSession } from '@/hooks/useTradingSession';
+import { useSessionManager } from './hooks/useSessionManager';
 import SessionForm from './SessionForm';
 import SessionList from './SessionList';
 
@@ -13,37 +14,12 @@ interface SessionManagerProps {
 }
 
 const SessionManager = ({ pair }: SessionManagerProps) => {
-  const { sessions, createSession, loadSession, isLoading, currentSession } = useTradingSession();
+  const { sessions, isLoading, currentSession } = useTradingSession();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { handleCreateSession, handleLoadSession } = useSessionManager(setShowCreateForm);
   
   console.log('SessionManager: rendered, currentSession =', currentSession?.id || 'null');
   console.log('SessionManager: sessions =', sessions.length);
-
-  const handleCreateSession = async (sessionData: {
-    session_name: string;
-    pair: string;
-    timeframe: string;
-    start_date: string;
-    start_time: string;
-  }) => {
-    try {
-      console.log('Creating new session:', sessionData);
-      const session = await createSession(sessionData);
-      console.log('Session created:', session);
-      setShowCreateForm(false);
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    }
-  };
-
-  const handleLoadSession = async (sessionId: string) => {
-    try {
-      console.log('Loading session:', sessionId);
-      await loadSession(sessionId);
-    } catch (error) {
-      console.error('Failed to load session:', error);
-    }
-  };
 
   return (
     <Card className="p-6 bg-slate-800/50 border-slate-700">

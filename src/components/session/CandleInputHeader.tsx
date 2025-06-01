@@ -5,16 +5,21 @@ import { Calendar, Clock, TrendingUp } from 'lucide-react';
 import { formatCandleDateTime } from '@/utils/dateTimeUtils';
 import { TradingSession } from '@/hooks/useTradingSession';
 
+interface SessionStats {
+  totalCandles: number;
+  lastPrice: number | null;
+  priceChange: number;
+  highestPrice?: number | null;
+  lowestPrice?: number | null;
+  averageVolume?: number;
+}
+
 interface CandleInputHeaderProps {
   nextCandleIndex: number;
   currentSession: TradingSession | null;
   nextCandleTime: string;
   pair: string;
-  sessionStats?: {
-    totalCandles: number;
-    lastPrice: number | null;
-    priceChange: number;
-  };
+  sessionStats?: SessionStats;
 }
 
 const CandleInputHeader = ({ 
@@ -41,7 +46,7 @@ const CandleInputHeader = ({
             <>
               <Badge className="bg-blue-600 text-white">{currentSession.timeframe}</Badge>
               <Badge className="bg-green-600 text-white">{pair}</Badge>
-              {sessionStats && sessionStats.totalCandles > 0 && (
+              {sessionStats && sessionStats.totalCandles > 0 && sessionStats.lastPrice !== null && (
                 <Badge className={`${sessionStats.priceChange >= 0 ? 'bg-green-600' : 'bg-red-600'} text-white`}>
                   <TrendingUp className="h-3 w-3 mr-1" />
                   {sessionStats.priceChange.toFixed(2)}%
@@ -61,7 +66,7 @@ const CandleInputHeader = ({
               <span>{formatCandleDateTime(nextCandleTime)}</span>
             </div>
             
-            {sessionStats && sessionStats.lastPrice && (
+            {sessionStats && sessionStats.lastPrice !== null && (
               <div className="flex items-center space-x-2 text-blue-200">
                 <Clock className="h-4 w-4" />
                 <span>Последняя цена:</span>

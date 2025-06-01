@@ -26,12 +26,18 @@ export const useImprovedCandleOperations = (
     }
 
     try {
-      const candleDateTime = calculateCandleDateTime(
-        currentSession.start_date,
-        currentSession.start_time,
-        currentSession.timeframe,
-        candleData.candle_index
-      );
+      // Проверяем, есть ли уже candle_datetime в данных
+      let candleDateTime: string;
+      if ('candle_datetime' in candleData && candleData.candle_datetime) {
+        candleDateTime = candleData.candle_datetime as string;
+      } else {
+        candleDateTime = calculateCandleDateTime(
+          currentSession.start_date,
+          currentSession.start_time,
+          currentSession.timeframe,
+          candleData.candle_index
+        );
+      }
 
       const fullCandleData = {
         ...candleData,

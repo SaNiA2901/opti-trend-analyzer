@@ -56,13 +56,21 @@ export const useOptimizedSessionState = () => {
     return Math.max(currentSession.current_candle_index + 1, candles.length);
   }, [currentSession, candles.length]);
 
-  // Оптимизированные сеттеры с правильными типами
-  const updateCandles = useCallback((updater: (prev: CandleData[]) => CandleData[]) => {
-    setCandles(updater);
+  // Исправленные сеттеры с правильными типами
+  const updateCandles = useCallback((candlesOrUpdater: CandleData[] | ((prev: CandleData[]) => CandleData[])) => {
+    if (typeof candlesOrUpdater === 'function') {
+      setCandles(candlesOrUpdater);
+    } else {
+      setCandles(candlesOrUpdater);
+    }
   }, []);
 
-  const updateCurrentSession = useCallback((updater: (prev: TradingSession | null) => TradingSession | null) => {
-    setCurrentSession(updater);
+  const updateCurrentSession = useCallback((sessionOrUpdater: TradingSession | null | ((prev: TradingSession | null) => TradingSession | null)) => {
+    if (typeof sessionOrUpdater === 'function') {
+      setCurrentSession(sessionOrUpdater);
+    } else {
+      setCurrentSession(sessionOrUpdater);
+    }
   }, []);
 
   const resetState = useCallback(() => {
