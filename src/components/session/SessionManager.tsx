@@ -18,10 +18,11 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { handleCreateSession, handleLoadSession } = useSessionManager(setShowCreateForm);
   
-  // Debug logging for state tracking
-  console.log('SessionManager: currentSession =', currentSession?.id || 'null');
-  console.log('SessionManager: currentSession object =', currentSession);
-  console.log('SessionManager: sessions count =', sessions.length);
+  // Debug logging для отслеживания состояния с более подробной информацией
+  console.log('SessionManager: Rendering with currentSession =', currentSession?.id || 'null');
+  console.log('SessionManager: Current session object =', currentSession);
+  console.log('SessionManager: Sessions available =', sessions.length);
+  console.log('SessionManager: Is loading =', isLoading);
 
   return (
     <Card className="p-6 bg-slate-800/50 border-slate-700">
@@ -34,10 +35,16 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
               Активна: {currentSession.session_name}
             </Badge>
           )}
+          {!currentSession && sessions.length > 0 && (
+            <Badge className="bg-yellow-600 text-white">
+              Нет активной сессии
+            </Badge>
+          )}
         </div>
         <Button 
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="bg-green-600 hover:bg-green-700"
+          disabled={isLoading}
         >
           <Plus className="h-4 w-4 mr-2" />
           Новая сессия
@@ -61,6 +68,14 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
           onLoadSession={handleLoadSession}
           isLoading={isLoading}
         />
+      )}
+
+      {sessions.length === 0 && !isLoading && (
+        <div className="text-center py-8 text-slate-400">
+          <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Нет доступных сессий</p>
+          <p className="text-sm">Создайте новую сессию для начала работы</p>
+        </div>
       )}
     </Card>
   );

@@ -15,6 +15,15 @@ interface CandleNumericData {
   volume: number;
 }
 
+// Константы для валидации
+const VALIDATION_CONSTANTS = {
+  MIN_PRICE: 0.00001,
+  MAX_PRICE: 999999,
+  MIN_VOLUME: 0,
+  MAX_VOLUME: 999999999,
+  PRICE_TOLERANCE: 0.0001 // Допустимая погрешность для сравнения цен
+} as const;
+
 export const validateRequiredFields = (data: CandleFormData): string[] => {
   const errors: string[] = [];
   
@@ -36,31 +45,71 @@ export const validateNumericValues = (data: CandleFormData): string[] => {
   const close = parseFloat(data.close);
   const volume = parseFloat(data.volume);
   
-  if (isNaN(open) || open <= 0) errors.push('Цена открытия должна быть положительным числом');
-  if (isNaN(high) || high <= 0) errors.push('Максимальная цена должна быть положительным числом');
-  if (isNaN(low) || low <= 0) errors.push('Минимальная цена должна быть положительным числом');
-  if (isNaN(close) || close <= 0) errors.push('Цена закрытия должна быть положительным числом');
-  if (isNaN(volume) || volume < 0) errors.push('Объем должен быть неотрицательным числом');
+  // Проверка на валидность чисел
+  if (isNaN(open)) errors.push('Цена открытия должна быть числом');
+  else if (open < VALIDATION_CONSTANTS.MIN_PRICE || open > VALIDATION_CONSTANTS.MAX_PRICE) {
+    errors.push(`Цена открытия должна быть от ${VALIDATION_CONSTANTS.MIN_PRICE} до ${VALIDATION_CONSTANTS.MAX_PRICE}`);
+  }
+  
+  if (isNaN(high)) errors.push('Максимальная цена должна быть числом');
+  else if (high < VALIDATION_CONSTANTS.MIN_PRICE || high > VALIDATION_CONSTANTS.MAX_PRICE) {
+    errors.push(`Максимальная цена должна быть от ${VALIDATION_CONSTANTS.MIN_PRICE} до ${VALIDATION_CONSTANTS.MAX_PRICE}`);
+  }
+  
+  if (isNaN(low)) errors.push('Минимальная цена должна быть числом');
+  else if (low < VALIDATION_CONSTANTS.MIN_PRICE || low > VALIDATION_CONSTANTS.MAX_PRICE) {
+    errors.push(`Минимальная цена должна быть от ${VALIDATION_CONSTANTS.MIN_PRICE} до ${VALIDATION_CONSTANTS.MAX_PRICE}`);
+  }
+  
+  if (isNaN(close)) errors.push('Цена закрытия должна быть числом');
+  else if (close < VALIDATION_CONSTANTS.MIN_PRICE || close > VALIDATION_CONSTANTS.MAX_PRICE) {
+    errors.push(`Цена закрытия должна быть от ${VALIDATION_CONSTANTS.MIN_PRICE} до ${VALIDATION_CONSTANTS.MAX_PRICE}`);
+  }
+  
+  if (isNaN(volume)) errors.push('Объем должен быть числом');
+  else if (volume < VALIDATION_CONSTANTS.MIN_VOLUME || volume > VALIDATION_CONSTANTS.MAX_VOLUME) {
+    errors.push(`Объем должен быть от ${VALIDATION_CONSTANTS.MIN_VOLUME} до ${VALIDATION_CONSTANTS.MAX_VOLUME}`);
+  }
   
   return errors;
 };
 
 export const validatePriceLogic = (data: CandleNumericData): string[] => {
   const errors: string[] = [];
+  const { open, high, low, close } = data;
   
-  // High должен быть максимальным
-  if (data.high < Math.max(data.open, data.close)) {
+  // Проверяем, что high >= max(open, close) с учетом погрешности
+  const maxOpenClose = Math.max(open, close);
+  if (high < maxOpenClose - VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
     errors.push('Максимальная цена не может быть меньше цен открытия или закрытия');
   }
   
-  // Low должен быть минимальным
-  if (data.low > Math.min(data.open, data.close)) {
+  // Проверяем, что low <= min(open, close) с учетом погрешности
+  const minOpenClose = Math.min(open, close);
+  if (low > minOpenClose + VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
     errors.push('Минимальная цена не может быть больше цен открытия или закрытия');
   }
   
-  // High должен быть >= Low
-  if (data.high < data.low) {
+  // Проверяем, что high >= low с учетом погрешности
+  if (high < low - VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
     errors.push('Максимальная цена не может быть меньше минимальной');
+  }
+  
+  // Дополнительные проверки логики
+  if (high < open - VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
+    errors.push('Максимальная цена не может быть меньше цены открытия');
+  }
+  
+  if (high < close - VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
+    errors.push('Максимальная цена не может быть меньше цены закрытия');
+  }
+  
+  if (low > open + VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
+    errors.push('Минимальная цена не может быть больше цены открытия');
+  }
+  
+  if (low > close + VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
+    errors.push('Минимальная цена не может быть больше цены закрытия');
   }
   
   return errors;
@@ -71,6 +120,28 @@ export const validateVolumeLogic = (volume: number): string[] => {
   
   if (volume === 0) {
     warnings.push('Объем равен нулю - возможно отсутствие торговой активности');
+  }
+  
+  if (volume > 0 && volume < 1000) {
+    warnings.push('Очень низкий объем торгов - проверьте корректность данных');
+  }
+  
+  return warnings;
+};
+
+// Функция для проверки корректности спреда
+export const validateSpread = (data: CandleNumericData): string[] => {
+  const warnings: string[] = [];
+  const spread = data.high - data.low;
+  const price = (data.open + data.close) / 2;
+  const spreadPercent = (spread / price) * 100;
+  
+  if (spreadPercent > 5) {
+    warnings.push(`Большой спред (${spreadPercent.toFixed(2)}%) - проверьте корректность данных`);
+  }
+  
+  if (spread < VALIDATION_CONSTANTS.PRICE_TOLERANCE) {
+    warnings.push('Очень маленький спред - возможно некорректные данные');
   }
   
   return warnings;

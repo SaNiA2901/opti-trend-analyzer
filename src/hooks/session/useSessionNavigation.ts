@@ -29,18 +29,20 @@ export const useSessionNavigation = (
       if (result) {
         console.log('useSessionNavigation: Session loaded successfully:', result.session.id);
         console.log('useSessionNavigation: Candles loaded:', result.candles.length);
-        console.log('useSessionNavigation: Setting current session to:', result.session);
         
-        // Обновляем состояние синхронно
-        setCurrentSession(() => {
-          console.log('useSessionNavigation: Current session setter called with:', result.session);
-          return result.session;
-        });
-        
+        // Сначала обновляем свечи, затем сессию для правильной синхронизации
         setCandles(() => {
-          console.log('useSessionNavigation: Candles setter called with:', result.candles.length, 'candles');
+          console.log('useSessionNavigation: Setting candles:', result.candles.length);
           return result.candles;
         });
+        
+        // Используем setTimeout для обеспечения правильного порядка обновлений
+        setTimeout(() => {
+          setCurrentSession(() => {
+            console.log('useSessionNavigation: Setting current session:', result.session.id);
+            return result.session;
+          });
+        }, 0);
         
         return result.session;
       }
