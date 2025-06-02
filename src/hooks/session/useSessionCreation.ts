@@ -39,15 +39,19 @@ export const useSessionCreation = (
       );
       
       if (session) {
-        // Синхронное обновление состояния
+        // Атомарное обновление состояния
         setCandles(() => []);
         setCurrentSession(session);
         
-        // Перезагружаем список сессий
+        // Перезагружаем список сессий в фоне
         await loadSessions();
+        console.log('Session created successfully:', session.id);
         return session;
       }
       throw new Error('Не удалось создать сессию');
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }

@@ -22,6 +22,8 @@ export const useSessionLoading = (
         setSessions(data);
         console.log('Sessions loaded successfully:', data.length);
       }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
     } finally {
       setIsLoading(false);
     }

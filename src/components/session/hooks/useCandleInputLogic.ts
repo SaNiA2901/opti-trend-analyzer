@@ -40,12 +40,21 @@ export const useCandleInputLogic = ({
 
   // Мемоизированное время следующей свечи
   const nextCandleTime = useMemo(() => {
-    return currentSession ? getNextCandleTime(nextCandleIndex) : '';
-  }, [currentSession, getNextCandleTime, nextCandleIndex]);
+    if (!currentSession || !getNextCandleTime) return '';
+    try {
+      return getNextCandleTime(nextCandleIndex);
+    } catch (error) {
+      console.error('Error calculating next candle time:', error);
+      return '';
+    }
+  }, [currentSession?.id, getNextCandleTime, nextCandleIndex]);
 
   // Мемоизированная последняя свеча
   const lastCandle = useMemo(() => {
-    return candles.length > 0 ? candles[candles.length - 1] : null;
+    if (candles.length === 0) return null;
+    return candles.reduce((latest, current) => 
+      current.candle_index > latest.candle_index ? current : latest
+    );
   }, [candles]);
 
   const handleSave = useCallback(async () => {
@@ -73,6 +82,7 @@ export const useCandleInputLogic = ({
       if (savedCandle) {
         onCandleSaved(savedCandle);
         resetForm(true);
+        console.log('Candle saved successfully:', savedCandle.id);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка сохранения';
@@ -91,12 +101,14 @@ export const useCandleInputLogic = ({
     try {
       await deleteCandle(lastCandle.candle_index);
       resetForm(false);
+      console.log('Last candle deleted successfully');
     } catch (error) {
+      console.error('Error deleting last candle:', error);
       addError('Ошибка удаления последней свечи', undefined, { source: 'candle-input' });
     }
   }, [currentSession, lastCandle, deleteCandle, addError, resetForm]);
 
-  // Автозаполнение цены открытия
+  // Автозаполнение цены открытия на основе последней свечи
   useEffect(() => {
     if (lastCandle && !candleData.open) {
       setCandleData(prev => ({
@@ -104,7 +116,7 @@ export const useCandleInputLogic = ({
         open: lastCandle.close.toString()
       }));
     }
-  }, [lastCandle, candleData.open, setCandleData]);
+  }, [lastCandle?.close, candleData.open, setCandleData]);
 
   return {
     candleData,

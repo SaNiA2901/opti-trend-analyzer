@@ -59,33 +59,36 @@ export const useTradingSession = () => {
   } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
   // Используем ref для предотвращения множественных инициализаций
-  const isInitialized = useRef(false);
+  const initializationRef = useRef({
+    isInitialized: false,
+    isInitializing: false
+  });
 
   // Единственная инициализация сессий
   useEffect(() => {
-    if (isInitialized.current) return;
+    const { isInitialized, isInitializing } = initializationRef.current;
     
-    let isMounted = true;
-    isInitialized.current = true;
+    if (isInitialized || isInitializing) {
+      return;
+    }
+    
+    initializationRef.current.isInitializing = true;
     
     const initializeSessions = async () => {
       try {
-        if (isMounted) {
-          console.log('useTradingSession: Initializing sessions...');
-          await loadSessions();
-          console.log('useTradingSession: Sessions initialized successfully');
-        }
+        console.log('useTradingSession: Initializing sessions...');
+        await loadSessions();
+        console.log('useTradingSession: Sessions initialized successfully');
+        initializationRef.current.isInitialized = true;
       } catch (error) {
         console.error('useTradingSession: Failed to initialize sessions:', error);
+      } finally {
+        initializationRef.current.isInitializing = false;
       }
     };
     
     initializeSessions();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [loadSessions]);
+  }, []); // Убираем loadSessions из зависимостей
 
   return {
     currentSession,

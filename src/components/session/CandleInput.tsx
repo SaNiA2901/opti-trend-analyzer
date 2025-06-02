@@ -38,7 +38,15 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     onCandleSaved
   });
 
-  const memoizedStats = useMemo(() => sessionStats, [sessionStats]);
+  // Мемоизируем статистику для предотвращения ненужных ререндеров
+  const memoizedStats = useMemo(() => sessionStats, [
+    sessionStats.totalCandles,
+    sessionStats.lastPrice,
+    sessionStats.priceChange,
+    sessionStats.highestPrice,
+    sessionStats.lowestPrice,
+    sessionStats.averageVolume
+  ]);
 
   if (!currentSession) {
     return (
@@ -63,7 +71,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       <CandleInputForm
         candleData={candleData}
         onFieldChange={updateField}
-        isDisabled={false}
+        isDisabled={isSubmitting}
         pair={pair}
       />
 

@@ -17,10 +17,13 @@ export const useOptimizedSessionState = () => {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Простой сеттер сессии - принимает TradingSession | null напрямую
+  // Оптимизированный сеттер сессии с мемоизацией
   const updateCurrentSession = useCallback((session: TradingSession | null) => {
     setCurrentSession(prev => {
-      if (prev?.id === session?.id) return prev;
+      // Предотвращаем ненужные обновления при одинаковых сессиях
+      if (prev?.id === session?.id && prev?.updated_at === session?.updated_at) {
+        return prev;
+      }
       return session;
     });
   }, []);
@@ -57,12 +60,12 @@ export const useOptimizedSessionState = () => {
       lowestPrice,
       averageVolume
     };
-  }, [currentSession, candles]);
+  }, [currentSession?.id, candles]); // Оптимизируем зависимости
 
   const nextCandleIndex = useMemo(() => {
     if (!currentSession) return 0;
     return Math.max(currentSession.current_candle_index + 1, candles.length);
-  }, [currentSession, candles.length]);
+  }, [currentSession?.current_candle_index, candles.length]);
 
   return {
     currentSession,

@@ -26,13 +26,17 @@ export const useSessionNavigation = (
       );
 
       if (result) {
-        // Синхронное обновление состояния для предотвращения race conditions
+        // Атомарное обновление состояния для предотвращения race conditions
         setCandles(() => result.candles);
         setCurrentSession(result.session);
         
+        console.log('Session loaded successfully:', result.session.id);
         return result.session;
       }
       throw new Error('Не удалось загрузить сессию');
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
