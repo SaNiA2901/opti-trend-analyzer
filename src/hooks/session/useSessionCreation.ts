@@ -14,7 +14,7 @@ interface SessionCreationData {
 
 export const useSessionCreation = (
   setIsLoading: (loading: boolean) => void,
-  setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void,
+  setCurrentSession: (session: TradingSession | null) => void,
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void,
   loadSessions: () => Promise<void>
 ) => {
@@ -29,7 +29,6 @@ export const useSessionCreation = (
       }
     }
 
-    console.log('useSessionCreation: Creating session with data:', sessionData);
     setIsLoading(true);
     
     try {
@@ -40,20 +39,9 @@ export const useSessionCreation = (
       );
       
       if (session) {
-        console.log('useSessionCreation: Session created successfully:', session.id);
-        console.log('useSessionCreation: Setting as current session:', session);
-        
-        // Устанавливаем созданную сессию как текущую
-        setCurrentSession(() => {
-          console.log('useSessionCreation: Current session setter called with:', session);
-          return session;
-        });
-        
-        // Очищаем свечи для новой сессии
-        setCandles(() => {
-          console.log('useSessionCreation: Clearing candles for new session');
-          return [];
-        });
+        // Синхронное обновление состояния
+        setCandles(() => []);
+        setCurrentSession(session);
         
         // Перезагружаем список сессий
         await loadSessions();

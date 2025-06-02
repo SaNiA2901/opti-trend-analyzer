@@ -38,11 +38,17 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     onCandleSaved
   });
 
-  // Debug logging
-  console.log('CandleInput: Rendering with session:', currentSession?.id || 'null');
-  console.log('CandleInput: Candles count:', candles.length);
-
   const memoizedStats = useMemo(() => sessionStats, [sessionStats]);
+
+  if (!currentSession) {
+    return (
+      <Card className="p-6 bg-slate-700/30 border-slate-600">
+        <div className="text-center text-slate-400">
+          <p>Выберите или создайте сессию для ввода данных свечей</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
@@ -57,7 +63,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
       <CandleInputForm
         candleData={candleData}
         onFieldChange={updateField}
-        isDisabled={!currentSession}
+        isDisabled={false}
         pair={pair}
       />
 

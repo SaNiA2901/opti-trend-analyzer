@@ -11,33 +11,21 @@ interface SessionStats {
   averageVolume: number;
 }
 
-type SessionUpdater = (prev: TradingSession | null) => TradingSession | null;
-type CandlesUpdater = (prev: CandleData[]) => CandleData[];
-
 export const useOptimizedSessionState = () => {
   const [currentSession, setCurrentSession] = useState<TradingSession | null>(null);
   const [sessions, setSessions] = useState<TradingSession[]>([]);
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Улучшенный сеттер с синхронизацией состояния
-  const debugSetCurrentSession = useCallback((updater: TradingSession | null | SessionUpdater) => {
-    console.log('useOptimizedSessionState: setCurrentSession called with:', typeof updater === 'function' ? 'function' : updater);
-    
+  // Оптимизированный сеттер сессии
+  const updateCurrentSession = useCallback((session: TradingSession | null) => {
     setCurrentSession(prev => {
-      const newSession = typeof updater === 'function' ? updater(prev) : updater;
-      console.log('useOptimizedSessionState: Session updated from', prev?.id || 'null', 'to', newSession?.id || 'null');
-      
-      // Принудительное обновление состояния для синхронизации
-      setTimeout(() => {
-        console.log('useOptimizedSessionState: Forcing state sync for session:', newSession?.id || 'null');
-      }, 0);
-      
-      return newSession;
+      if (prev?.id === session?.id) return prev; // Предотвращаем ненужные обновления
+      return session;
     });
   }, []);
 
-  // Мемоизированные селекторы для предотвращения лишних re-renders
+  // Мемоизированная статистика сессии
   const sessionStats = useMemo((): SessionStats => {
     if (!currentSession || candles.length === 0) {
       return { 
@@ -76,40 +64,16 @@ export const useOptimizedSessionState = () => {
     return Math.max(currentSession.current_candle_index + 1, candles.length);
   }, [currentSession, candles.length]);
 
-  // Типизированные сеттеры с улучшенной обработкой
-  const updateCandles = useCallback((updater: CandleData[] | CandlesUpdater) => {
-    setCandles(prev => {
-      const newCandles = typeof updater === 'function' ? updater(prev) : updater;
-      console.log('useOptimizedSessionState: Candles updated, count:', newCandles.length);
-      return newCandles;
-    });
-  }, []);
-
-  const resetState = useCallback(() => {
-    console.log('useOptimizedSessionState: Resetting all state');
-    setCurrentSession(null);
-    setCandles([]);
-    setIsLoading(false);
-  }, []);
-
-  // Функция для принудительной синхронизации состояния
-  const forceStateSync = useCallback(() => {
-    console.log('useOptimizedSessionState: Force syncing state');
-    setCurrentSession(prev => ({ ...prev }));
-  }, []);
-
   return {
     currentSession,
-    setCurrentSession: debugSetCurrentSession,
+    setCurrentSession: updateCurrentSession,
     sessions,
     setSessions,
     candles,
-    setCandles: updateCandles,
+    setCandles,
     isLoading,
     setIsLoading,
     sessionStats,
-    nextCandleIndex,
-    resetState,
-    forceStateSync
+    nextCandleIndex
   };
 };

@@ -38,22 +38,14 @@ export const useCandleInputLogic = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Мемоизируем время следующей свечи
+  // Мемоизированное время следующей свечи
   const nextCandleTime = useMemo(() => {
-    if (!currentSession) {
-      console.log('useCandleInputLogic: No current session for time calculation');
-      return '';
-    }
-    const time = getNextCandleTime(nextCandleIndex);
-    console.log('useCandleInputLogic: Next candle time calculated:', time);
-    return time;
+    return currentSession ? getNextCandleTime(nextCandleIndex) : '';
   }, [currentSession, getNextCandleTime, nextCandleIndex]);
 
-  // Мемоизируем последнюю свечу
+  // Мемоизированная последняя свеча
   const lastCandle = useMemo(() => {
-    const last = candles.length > 0 ? candles[candles.length - 1] : null;
-    console.log('useCandleInputLogic: Last candle:', last?.candle_index || 'none');
-    return last;
+    return candles.length > 0 ? candles[candles.length - 1] : null;
   }, [candles]);
 
   const handleSave = useCallback(async () => {
@@ -65,14 +57,12 @@ export const useCandleInputLogic = ({
     }
 
     if (!validateForm()) {
-      console.log('useCandleInputLogic: Form validation failed');
       return;
     }
 
     const numericData = getNumericData();
-    console.log('useCandleInputLogic: Saving candle with data:', numericData);
-
     setIsSubmitting(true);
+    
     try {
       const savedCandle = await saveCandle({
         session_id: currentSession.id,
@@ -81,12 +71,10 @@ export const useCandleInputLogic = ({
       });
 
       if (savedCandle) {
-        console.log('useCandleInputLogic: Candle saved successfully:', savedCandle);
         onCandleSaved(savedCandle);
         resetForm(true);
       }
     } catch (error) {
-      console.error('useCandleInputLogic: Error saving candle:', error);
       const errorMessage = error instanceof Error ? error.message : 'Ошибка сохранения';
       setValidationErrors([errorMessage]);
       addError(errorMessage, undefined, { source: 'candle-input' });
@@ -97,25 +85,20 @@ export const useCandleInputLogic = ({
 
   const handleDeleteLastCandle = useCallback(async () => {
     if (!currentSession || !lastCandle) {
-      console.warn('useCandleInputLogic: Cannot delete - no session or no candles');
       return;
     }
 
     try {
-      console.log('useCandleInputLogic: Deleting last candle:', lastCandle.candle_index);
       await deleteCandle(lastCandle.candle_index);
-      console.log('useCandleInputLogic: Last candle deleted successfully');
       resetForm(false);
     } catch (error) {
-      console.error('useCandleInputLogic: Error deleting last candle:', error);
       addError('Ошибка удаления последней свечи', undefined, { source: 'candle-input' });
     }
   }, [currentSession, lastCandle, deleteCandle, addError, resetForm]);
 
-  // Автозаполнение цены открытия на основе последней свечи
+  // Автозаполнение цены открытия
   useEffect(() => {
     if (lastCandle && !candleData.open) {
-      console.log('useCandleInputLogic: Auto-filling open price from last candle:', lastCandle.close);
       setCandleData(prev => ({
         ...prev,
         open: lastCandle.close.toString()

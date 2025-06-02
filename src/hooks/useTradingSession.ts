@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useOptimizedSessionState } from './useOptimizedSessionState';
 import { useImprovedSessionOperations } from './useImprovedSessionOperations';
 import { useImprovedCandleOperations } from './useImprovedCandleOperations';
@@ -58,9 +58,15 @@ export const useTradingSession = () => {
     updateCandle
   } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
-  // Инициализация сессий с улучшенной обработкой ошибок
+  // Используем ref для предотвращения множественных инициализаций
+  const isInitialized = useRef(false);
+
+  // Единственная инициализация сессий
   useEffect(() => {
+    if (isInitialized.current) return;
+    
     let isMounted = true;
+    isInitialized.current = true;
     
     const initializeSessions = async () => {
       try {
@@ -80,15 +86,6 @@ export const useTradingSession = () => {
       isMounted = false;
     };
   }, [loadSessions]);
-
-  // Debug logging для отслеживания состояния
-  useEffect(() => {
-    console.log('useTradingSession: currentSession changed =', currentSession?.id || 'null');
-  }, [currentSession]);
-
-  useEffect(() => {
-    console.log('useTradingSession: sessions count changed =', sessions.length);
-  }, [sessions.length]);
 
   return {
     currentSession,
