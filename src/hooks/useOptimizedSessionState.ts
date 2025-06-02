@@ -23,10 +23,11 @@ export const useOptimizedSessionState = () => {
   const [candles, setCandlesState] = useState<CandleData[]>([]);
   const [isLoading, setIsLoadingState] = useState(false);
 
-  // Мемоизированные сеттеры с оптимизацией обновлений
+  // Исправленные мемоизированные сеттеры
   const setCurrentSession: SetCurrentSessionFn = useCallback((session) => {
     setCurrentSessionState(prev => {
-      if (prev?.id === session?.id && prev?.updated_at === session?.updated_at) {
+      // Простое сравнение по ID без дополнительных проверок
+      if (prev?.id === session?.id) {
         return prev;
       }
       console.log('Session state updated:', session?.id || 'null');

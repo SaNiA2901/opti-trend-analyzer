@@ -12,36 +12,56 @@ interface SessionCreationData {
 }
 
 export const useSessionManager = (setShowCreateForm: (show: boolean) => void) => {
-  const { createSession, loadSession } = useTradingSession();
+  const { createSession, loadSession, deleteSession } = useTradingSession();
   const { addError } = useErrorHandler();
 
   const handleCreateSession = useCallback(async (sessionData: SessionCreationData) => {
     try {
-      console.log('useSessionManager: Creating session with data:', sessionData);
+      console.log('useSessionManager: Creating session:', sessionData.session_name);
       const session = await createSession(sessionData);
       if (session) {
-        console.log('useSessionManager: Session created successfully:', session.id);
         setShowCreateForm(false);
+        console.log('useSessionManager: Session created and form closed');
       }
     } catch (error) {
-      console.error('useSessionManager: Error creating session:', error);
-      addError('Ошибка создания сессии', undefined, { source: 'session-manager' });
+      console.error('useSessionManager: Failed to create session:', error);
+      addError('Ошибка создания сессии', error instanceof Error ? error : undefined, { 
+        source: 'session-manager' 
+      });
     }
   }, [createSession, setShowCreateForm, addError]);
 
   const handleLoadSession = useCallback(async (sessionId: string) => {
     try {
       console.log('useSessionManager: Loading session:', sessionId);
-      await loadSession(sessionId);
-      console.log('useSessionManager: Session loaded successfully');
+      const session = await loadSession(sessionId);
+      if (session) {
+        console.log('useSessionManager: Session loaded successfully');
+      }
     } catch (error) {
-      console.error('useSessionManager: Error loading session:', error);
-      addError('Ошибка загрузки сессии', undefined, { source: 'session-manager' });
+      console.error('useSessionManager: Failed to load session:', error);
+      addError('Ошибка загрузки сессии', error instanceof Error ? error : undefined, { 
+        source: 'session-manager' 
+      });
     }
   }, [loadSession, addError]);
 
-  return {
-    handleCreateSession,
-    handleLoadSession
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    try {
+      console.log('useSessionManager: Deleting session:', sessionId);
+      await deleteSession(sessionId);
+      console.log('useSessionManager: Session deleted successfully');
+    } catch (error) {
+      console.error('useSessionManager: Failed to delete session:', error);
+      addError('Ошибка удаления сессии', error instanceof Error ? error : undefined, { 
+        source: 'session-manager' 
+      });
+    }
+  }, [deleteSession, addError]);
+
+  return { 
+    handleCreateSession, 
+    handleLoadSession, 
+    handleDeleteSession 
   };
 };

@@ -16,7 +16,7 @@ interface SessionManagerProps {
 const SessionManager = ({ pair }: SessionManagerProps) => {
   const { sessions, isLoading, currentSession } = useTradingSession();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const { handleCreateSession, handleLoadSession } = useSessionManager(setShowCreateForm);
+  const { handleCreateSession, handleLoadSession, handleDeleteSession } = useSessionManager(setShowCreateForm);
   
   // Debug logging для отслеживания состояния с более подробной информацией
   console.log('SessionManager: Rendering with currentSession =', currentSession?.id || 'null');
@@ -66,6 +66,7 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
           currentSession={currentSession}
           pair={pair}
           onLoadSession={handleLoadSession}
+          onDeleteSession={handleDeleteSession}
           isLoading={isLoading}
         />
       )}

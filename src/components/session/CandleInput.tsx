@@ -66,6 +66,8 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     );
   }
 
+  console.log('CandleInput: Rendering with session:', currentSession.id, 'isActive:', !!currentSession);
+
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
       <CandleInputHeader

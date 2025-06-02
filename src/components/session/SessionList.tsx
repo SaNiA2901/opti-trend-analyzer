@@ -2,7 +2,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Play } from 'lucide-react';
+import { Calendar, Clock, Play, Trash2 } from 'lucide-react';
 import { TradingSession } from '@/hooks/useTradingSession';
 
 interface SessionListProps {
@@ -10,10 +10,18 @@ interface SessionListProps {
   currentSession: TradingSession | null;
   pair: string;
   onLoadSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   isLoading: boolean;
 }
 
-const SessionList = ({ sessions, currentSession, pair, onLoadSession, isLoading }: SessionListProps) => {
+const SessionList = ({ 
+  sessions, 
+  currentSession, 
+  pair, 
+  onLoadSession, 
+  onDeleteSession, 
+  isLoading 
+}: SessionListProps) => {
   const filteredSessions = sessions.filter(s => s.pair === pair);
 
   if (filteredSessions.length === 0) {
@@ -51,16 +59,28 @@ const SessionList = ({ sessions, currentSession, pair, onLoadSession, isLoading 
               </div>
             </div>
             
-            <Button 
-              onClick={() => onLoadSession(session.id)}
-              disabled={isLoading}
-              className={currentSession?.id === session.id 
-                ? "bg-green-700 hover:bg-green-800" 
-                : "bg-green-600 hover:bg-green-700"}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              {currentSession?.id === session.id ? 'Активна' : 'Загрузить'}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={() => onLoadSession(session.id)}
+                disabled={isLoading}
+                className={currentSession?.id === session.id 
+                  ? "bg-green-700 hover:bg-green-800" 
+                  : "bg-green-600 hover:bg-green-700"}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {currentSession?.id === session.id ? 'Активна' : 'Загрузить'}
+              </Button>
+              
+              <Button 
+                onClick={() => onDeleteSession(session.id)}
+                disabled={isLoading}
+                variant="destructive"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </Card>
       ))}

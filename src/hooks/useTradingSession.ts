@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useOptimizedSessionState } from './useOptimizedSessionState';
 import { useImprovedSessionOperations } from './useImprovedSessionOperations';
 import { useImprovedCandleOperations } from './useImprovedCandleOperations';
@@ -54,7 +54,8 @@ export const useTradingSession = () => {
   const {
     loadSessions,
     createSession,
-    loadSession
+    loadSession,
+    deleteSession
   } = useImprovedSessionOperations(setIsLoading, setSessions, setCurrentSession, setCandles);
 
   const {
@@ -112,6 +113,7 @@ export const useTradingSession = () => {
     sessionStats,
     nextCandleIndex,
     deleteCandle,
-    updateCandle
+    updateCandle,
+    deleteSession
   };
 };
