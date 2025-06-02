@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useOptimizedSessionState } from './useOptimizedSessionState';
 import { useImprovedSessionOperations } from './useImprovedSessionOperations';
 import { useImprovedCandleOperations } from './useImprovedCandleOperations';
@@ -31,6 +31,12 @@ export interface CandleData {
   prediction_confidence?: number;
 }
 
+// Глобальный флаг для предотвращения множественных инициализаций
+let globalInitializationState = {
+  isInitialized: false,
+  isInitializing: false
+};
+
 export const useTradingSession = () => {
   const {
     currentSession,
@@ -58,37 +64,40 @@ export const useTradingSession = () => {
     updateCandle
   } = useImprovedCandleOperations(currentSession, setCandles, setCurrentSession);
 
-  // Используем ref для предотвращения множественных инициализаций
-  const initializationRef = useRef({
-    isInitialized: false,
-    isInitializing: false
-  });
-
-  // Единственная инициализация сессий
-  useEffect(() => {
-    const { isInitialized, isInitializing } = initializationRef.current;
-    
-    if (isInitialized || isInitializing) {
+  // Мемоизированная функция инициализации
+  const initializeSessions = useCallback(async () => {
+    if (globalInitializationState.isInitialized || globalInitializationState.isInitializing) {
       return;
     }
     
-    initializationRef.current.isInitializing = true;
+    globalInitializationState.isInitializing = true;
     
-    const initializeSessions = async () => {
-      try {
-        console.log('useTradingSession: Initializing sessions...');
-        await loadSessions();
-        console.log('useTradingSession: Sessions initialized successfully');
-        initializationRef.current.isInitialized = true;
-      } catch (error) {
-        console.error('useTradingSession: Failed to initialize sessions:', error);
-      } finally {
-        initializationRef.current.isInitializing = false;
-      }
-    };
-    
+    try {
+      console.log('useTradingSession: Starting initialization...');
+      await loadSessions();
+      globalInitializationState.isInitialized = true;
+      console.log('useTradingSession: Initialization completed successfully');
+    } catch (error) {
+      console.error('useTradingSession: Initialization failed:', error);
+      globalInitializationState.isInitializing = false;
+    } finally {
+      globalInitializationState.isInitializing = false;
+    }
+  }, [loadSessions]);
+
+  // Единственная инициализация с защитой от повторных вызовов
+  useEffect(() => {
     initializeSessions();
-  }, []); // Убираем loadSessions из зависимостей
+  }, []); // Пустой массив зависимостей для единственного вызова
+
+  // Очистка при размонтировании
+  useEffect(() => {
+    return () => {
+      // Сброс состояния при размонтировании последнего экземпляра
+      globalInitializationState.isInitialized = false;
+      globalInitializationState.isInitializing = false;
+    };
+  }, []);
 
   return {
     currentSession,

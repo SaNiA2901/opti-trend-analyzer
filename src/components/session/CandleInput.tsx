@@ -38,8 +38,15 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     onCandleSaved
   });
 
-  // Мемоизируем статистику для предотвращения ненужных ререндеров
-  const memoizedStats = useMemo(() => sessionStats, [
+  // Стабильная мемоизация статистики
+  const memoizedStats = useMemo(() => ({
+    totalCandles: sessionStats.totalCandles,
+    lastPrice: sessionStats.lastPrice,
+    priceChange: sessionStats.priceChange,
+    highestPrice: sessionStats.highestPrice,
+    lowestPrice: sessionStats.lowestPrice,
+    averageVolume: sessionStats.averageVolume
+  }), [
     sessionStats.totalCandles,
     sessionStats.lastPrice,
     sessionStats.priceChange,
@@ -48,6 +55,7 @@ const CandleInput = ({ pair, onCandleSaved }: CandleInputProps) => {
     sessionStats.averageVolume
   ]);
 
+  // Раннее возвращение для состояния без сессии
   if (!currentSession) {
     return (
       <Card className="p-6 bg-slate-700/30 border-slate-600">

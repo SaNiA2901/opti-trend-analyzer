@@ -16,6 +16,7 @@ export const useSessionNavigation = (
       throw new Error('ID сессии не может быть пустым');
     }
 
+    console.log('useSessionNavigation: Loading session:', sessionId);
     setIsLoading(true);
     
     try {
@@ -30,12 +31,18 @@ export const useSessionNavigation = (
         setCandles(() => result.candles);
         setCurrentSession(result.session);
         
-        console.log('Session loaded successfully:', result.session.id);
+        console.log('useSessionNavigation: Session loaded successfully:', {
+          sessionId: result.session.id,
+          candlesCount: result.candles.length
+        });
         return result.session;
       }
       throw new Error('Не удалось загрузить сессию');
     } catch (error) {
-      console.error('Failed to load session:', error);
+      console.error('useSessionNavigation: Failed to load session:', error);
+      // При ошибке очищаем текущую сессию
+      setCurrentSession(null);
+      setCandles(() => []);
       throw error;
     } finally {
       setIsLoading(false);

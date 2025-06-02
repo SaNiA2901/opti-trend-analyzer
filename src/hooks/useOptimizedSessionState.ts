@@ -11,24 +11,63 @@ interface SessionStats {
   averageVolume: number;
 }
 
-export const useOptimizedSessionState = () => {
-  const [currentSession, setCurrentSession] = useState<TradingSession | null>(null);
-  const [sessions, setSessions] = useState<TradingSession[]>([]);
-  const [candles, setCandles] = useState<CandleData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+// Типизированные функции состояния
+type SetCurrentSessionFn = (session: TradingSession | null) => void;
+type SetSessionsFn = (sessions: TradingSession[]) => void;
+type SetCandlesFn = (updater: (prev: CandleData[]) => CandleData[]) => void;
+type SetIsLoadingFn = (loading: boolean) => void;
 
-  // Оптимизированный сеттер сессии с мемоизацией
-  const updateCurrentSession = useCallback((session: TradingSession | null) => {
-    setCurrentSession(prev => {
-      // Предотвращаем ненужные обновления при одинаковых сессиях
+export const useOptimizedSessionState = () => {
+  const [currentSession, setCurrentSessionState] = useState<TradingSession | null>(null);
+  const [sessions, setSessionsState] = useState<TradingSession[]>([]);
+  const [candles, setCandlesState] = useState<CandleData[]>([]);
+  const [isLoading, setIsLoadingState] = useState(false);
+
+  // Мемоизированные сеттеры с оптимизацией обновлений
+  const setCurrentSession: SetCurrentSessionFn = useCallback((session) => {
+    setCurrentSessionState(prev => {
       if (prev?.id === session?.id && prev?.updated_at === session?.updated_at) {
         return prev;
       }
+      console.log('Session state updated:', session?.id || 'null');
       return session;
     });
   }, []);
 
-  // Мемоизированная статистика сессии
+  const setSessions: SetSessionsFn = useCallback((sessions) => {
+    setSessionsState(prev => {
+      if (prev.length === sessions.length && 
+          prev.every((session, index) => session.id === sessions[index]?.id)) {
+        return prev;
+      }
+      console.log('Sessions state updated:', sessions.length);
+      return sessions;
+    });
+  }, []);
+
+  const setCandles: SetCandlesFn = useCallback((updater) => {
+    setCandlesState(prev => {
+      const newCandles = updater(prev);
+      if (newCandles.length !== prev.length || 
+          newCandles.some((candle, index) => candle.id !== prev[index]?.id)) {
+        console.log('Candles state updated:', newCandles.length);
+        return newCandles;
+      }
+      return prev;
+    });
+  }, []);
+
+  const setIsLoading: SetIsLoadingFn = useCallback((loading) => {
+    setIsLoadingState(prev => {
+      if (prev !== loading) {
+        console.log('Loading state updated:', loading);
+        return loading;
+      }
+      return prev;
+    });
+  }, []);
+
+  // Оптимизированная статистика с глубокой мемоизацией
   const sessionStats = useMemo((): SessionStats => {
     if (!currentSession || candles.length === 0) {
       return { 
@@ -41,14 +80,24 @@ export const useOptimizedSessionState = () => {
       };
     }
 
+    // Сортировка только один раз
     const sortedCandles = [...candles].sort((a, b) => a.candle_index - b.candle_index);
     const firstCandle = sortedCandles[0];
     const lastCandle = sortedCandles[sortedCandles.length - 1];
     
-    const prices = candles.flatMap(c => [c.open, c.high, c.low, c.close]);
-    const highestPrice = Math.max(...prices);
-    const lowestPrice = Math.min(...prices);
-    const averageVolume = candles.reduce((sum, c) => sum + c.volume, 0) / candles.length;
+    // Эффективный расчет статистики
+    let highestPrice = -Infinity;
+    let lowestPrice = Infinity;
+    let totalVolume = 0;
+    
+    for (const candle of candles) {
+      const prices = [candle.open, candle.high, candle.low, candle.close];
+      for (const price of prices) {
+        if (price > highestPrice) highestPrice = price;
+        if (price < lowestPrice) lowestPrice = price;
+      }
+      totalVolume += candle.volume;
+    }
     
     return {
       totalCandles: candles.length,
@@ -56,12 +105,13 @@ export const useOptimizedSessionState = () => {
       priceChange: lastCandle && firstCandle 
         ? ((lastCandle.close - firstCandle.open) / firstCandle.open) * 100 
         : 0,
-      highestPrice,
-      lowestPrice,
-      averageVolume
+      highestPrice: highestPrice === -Infinity ? null : highestPrice,
+      lowestPrice: lowestPrice === Infinity ? null : lowestPrice,
+      averageVolume: candles.length > 0 ? totalVolume / candles.length : 0
     };
-  }, [currentSession?.id, candles]); // Оптимизируем зависимости
+  }, [currentSession?.id, candles]);
 
+  // Мемоизированный индекс следующей свечи
   const nextCandleIndex = useMemo(() => {
     if (!currentSession) return 0;
     return Math.max(currentSession.current_candle_index + 1, candles.length);
@@ -69,7 +119,7 @@ export const useOptimizedSessionState = () => {
 
   return {
     currentSession,
-    setCurrentSession: updateCurrentSession,
+    setCurrentSession,
     sessions,
     setSessions,
     candles,

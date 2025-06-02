@@ -11,19 +11,28 @@ export const useSessionLoading = (
   const { handleAsyncError } = useErrorHandler();
 
   const loadSessions = useCallback(async () => {
+    console.log('useSessionLoading: Starting to load sessions...');
     setIsLoading(true);
+    
     try {
       const data = await handleAsyncError(
         () => sessionService.loadSessions(),
         'Ошибка загрузки сессий',
         { source: 'session-loading' }
       );
+      
       if (data) {
+        // Атомарное обновление состояния
         setSessions(data);
-        console.log('Sessions loaded successfully:', data.length);
+        console.log('useSessionLoading: Sessions loaded successfully:', data.length);
+      } else {
+        console.warn('useSessionLoading: No session data received');
+        setSessions([]);
       }
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      console.error('useSessionLoading: Failed to load sessions:', error);
+      setSessions([]); // Сброс до пустого состояния при ошибке
+      throw error; // Пробрасываем ошибку для обработки выше
     } finally {
       setIsLoading(false);
     }

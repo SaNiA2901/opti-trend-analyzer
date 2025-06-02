@@ -21,14 +21,17 @@ export const useSessionCreation = (
   const { handleAsyncError } = useErrorHandler();
 
   const createSession = useCallback(async (sessionData: SessionCreationData) => {
-    // Валидация входных данных
+    // Расширенная валидация входных данных
     const requiredFields = ['session_name', 'pair', 'timeframe', 'start_date', 'start_time'];
-    for (const field of requiredFields) {
-      if (!sessionData[field as keyof SessionCreationData]?.trim()) {
-        throw new Error(`Поле "${field}" обязательно для заполнения`);
-      }
+    const missingFields = requiredFields.filter(
+      field => !sessionData[field as keyof SessionCreationData]?.trim()
+    );
+    
+    if (missingFields.length > 0) {
+      throw new Error(`Обязательные поля не заполнены: ${missingFields.join(', ')}`);
     }
 
+    console.log('useSessionCreation: Creating session:', sessionData.session_name);
     setIsLoading(true);
     
     try {
@@ -43,14 +46,20 @@ export const useSessionCreation = (
         setCandles(() => []);
         setCurrentSession(session);
         
-        // Перезагружаем список сессий в фоне
-        await loadSessions();
-        console.log('Session created successfully:', session.id);
+        // Асинхронная перезагрузка списка сессий в фоне
+        loadSessions().catch(error => {
+          console.warn('useSessionCreation: Failed to reload sessions list:', error);
+        });
+        
+        console.log('useSessionCreation: Session created successfully:', {
+          id: session.id,
+          name: session.session_name
+        });
         return session;
       }
       throw new Error('Не удалось создать сессию');
     } catch (error) {
-      console.error('Failed to create session:', error);
+      console.error('useSessionCreation: Failed to create session:', error);
       throw error;
     } finally {
       setIsLoading(false);
