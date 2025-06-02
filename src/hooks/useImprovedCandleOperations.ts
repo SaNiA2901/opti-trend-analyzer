@@ -6,7 +6,7 @@ import { useCandleOperations } from './candle/useCandleOperations';
 export const useImprovedCandleOperations = (
   currentSession: TradingSession | null,
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void,
-  setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void
+  setCurrentSession: (session: TradingSession | null) => void
 ) => {
   const { saveCandle } = useCandleSaving(currentSession, setCandles, setCurrentSession);
   const { getNextCandleTime, deleteCandle, updateCandle } = useCandleOperations(currentSession, setCandles);

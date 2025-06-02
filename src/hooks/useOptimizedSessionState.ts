@@ -17,10 +17,10 @@ export const useOptimizedSessionState = () => {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Оптимизированный сеттер сессии
+  // Простой сеттер сессии - принимает TradingSession | null напрямую
   const updateCurrentSession = useCallback((session: TradingSession | null) => {
     setCurrentSession(prev => {
-      if (prev?.id === session?.id) return prev; // Предотвращаем ненужные обновления
+      if (prev?.id === session?.id) return prev;
       return session;
     });
   }, []);

@@ -7,7 +7,7 @@ import { useSessionNavigation } from './session/useSessionNavigation';
 export const useImprovedSessionOperations = (
   setIsLoading: (loading: boolean) => void,
   setSessions: (sessions: TradingSession[]) => void,
-  setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void,
+  setCurrentSession: (session: TradingSession | null) => void,
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void
 ) => {
   const { loadSessions } = useSessionLoading(setIsLoading, setSessions);

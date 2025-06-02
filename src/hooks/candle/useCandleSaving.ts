@@ -10,7 +10,7 @@ import { TradingSession, CandleData } from '@/hooks/useTradingSession';
 export const useCandleSaving = (
   currentSession: TradingSession | null,
   setCandles: (updater: (prev: CandleData[]) => CandleData[]) => void,
-  setCurrentSession: (updater: (prev: TradingSession | null) => TradingSession | null) => void
+  setCurrentSession: (session: TradingSession | null) => void
 ) => {
   const { handleAsyncError } = useErrorHandler();
 
@@ -69,11 +69,11 @@ export const useCandleSaving = (
         return [...filtered, savedCandle].sort((a, b) => a.candle_index - b.candle_index);
       });
 
-      setCurrentSession(prev => prev ? {
-        ...prev,
+      setCurrentSession({
+        ...currentSession,
         current_candle_index: newCandleIndex,
         updated_at: new Date().toISOString()
-      } : null);
+      });
 
       return savedCandle;
     } catch (error) {
