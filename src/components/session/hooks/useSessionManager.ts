@@ -25,9 +25,11 @@ export const useSessionManager = (setShowCreateForm: (show: boolean) => void) =>
       }
     } catch (error) {
       console.error('useSessionManager: Failed to create session:', error);
-      addError('Ошибка создания сессии', error instanceof Error ? error : undefined, { 
-        source: 'session-manager' 
-      });
+      addError(
+        'Ошибка создания сессии', 
+        error instanceof Error ? error.message : 'Unknown error', 
+        { source: 'session-manager' }
+      );
     }
   }, [createSession, setShowCreateForm, addError]);
 
@@ -40,9 +42,11 @@ export const useSessionManager = (setShowCreateForm: (show: boolean) => void) =>
       }
     } catch (error) {
       console.error('useSessionManager: Failed to load session:', error);
-      addError('Ошибка загрузки сессии', error instanceof Error ? error : undefined, { 
-        source: 'session-manager' 
-      });
+      addError(
+        'Ошибка загрузки сессии', 
+        error instanceof Error ? error.message : 'Unknown error', 
+        { source: 'session-manager' }
+      );
     }
   }, [loadSession, addError]);
 
@@ -53,9 +57,11 @@ export const useSessionManager = (setShowCreateForm: (show: boolean) => void) =>
       console.log('useSessionManager: Session deleted successfully');
     } catch (error) {
       console.error('useSessionManager: Failed to delete session:', error);
-      addError('Ошибка удаления сессии', error instanceof Error ? error : undefined, { 
-        source: 'session-manager' 
-      });
+      addError(
+        'Ошибка удаления сессии', 
+        error instanceof Error ? error.message : 'Unknown error', 
+        { source: 'session-manager' }
+      );
     }
   }, [deleteSession, addError]);
 
