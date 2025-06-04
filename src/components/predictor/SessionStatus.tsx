@@ -2,7 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
-import { TradingSession } from "@/hooks/useTradingSession";
+import { TradingSession } from "@/types/session";
 
 interface SessionStatusProps {
   currentSession: TradingSession | null;

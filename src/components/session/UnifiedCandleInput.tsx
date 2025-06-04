@@ -38,6 +38,10 @@ const UnifiedCandleInput = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
+  console.log('UnifiedCandleInput: Rendering with currentSession =', currentSession?.id || 'null');
+  console.log('UnifiedCandleInput: nextCandleIndex =', nextCandleIndex);
+  console.log('UnifiedCandleInput: candles count =', candles.length);
+
   const { saveCandle, deleteLastCandle, calculateCandleTime } = useUnifiedCandleOperations(
     currentSession,
     candles,
@@ -120,6 +124,8 @@ const UnifiedCandleInput = ({
         volume: Number(formData.volume)
       };
 
+      console.log('UnifiedCandleInput: Saving candle with data =', candleData);
+
       const savedCandle = await saveCandle(candleData);
       
       // Очищаем форму, кроме цены открытия для следующей свечи
@@ -159,6 +165,7 @@ const UnifiedCandleInput = ({
   };
 
   if (!currentSession) {
+    console.log('UnifiedCandleInput: No currentSession, returning placeholder');
     return (
       <Card className="p-6 bg-slate-700/30 border-slate-600">
         <div className="text-center text-slate-400">
@@ -167,6 +174,8 @@ const UnifiedCandleInput = ({
       </Card>
     );
   }
+
+  console.log('UnifiedCandleInput: Rendering full component');
 
   const isFormValid = validateForm();
 

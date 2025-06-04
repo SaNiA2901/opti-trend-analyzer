@@ -52,15 +52,18 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
 
       <SessionStatus currentSession={currentSession} />
 
-      <UnifiedCandleInput 
-        currentSession={currentSession}
-        candles={candles}
-        setCandles={setCandles}
-        setCurrentSession={setCurrentSession}
-        nextCandleIndex={nextCandleIndex}
-        pair={pair}
-        onCandleSaved={handleCandleSaved}
-      />
+      {/* Всегда показываем поля ввода, если есть активная сессия */}
+      {currentSession && (
+        <UnifiedCandleInput 
+          currentSession={currentSession}
+          candles={candles}
+          setCandles={setCandles}
+          setCurrentSession={setCurrentSession}
+          nextCandleIndex={nextCandleIndex}
+          pair={pair}
+          onCandleSaved={handleCandleSaved}
+        />
+      )}
 
       <PredictionSettings 
         config={predictionConfig}
