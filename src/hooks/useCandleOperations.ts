@@ -19,7 +19,16 @@ export const useCandleOperations = (
     }
 
     try {
-      const savedCandle = await candleService.saveCandle(candleData);
+      // Рассчитываем время свечи
+      const candleDateTime = getNextCandleTime(candleData.candle_index);
+      
+      // Добавляем candle_datetime к данным
+      const fullCandleData = {
+        ...candleData,
+        candle_datetime: candleDateTime
+      };
+
+      const savedCandle = await candleService.saveCandle(fullCandleData);
       
       // Обновляем список свечей
       setCandles([...candles, savedCandle]);
@@ -48,7 +57,7 @@ export const useCandleOperations = (
     const lastCandle = candles[candles.length - 1];
     
     try {
-      await candleService.deleteCandle(lastCandle.candle_index, currentSession.id);
+      await candleService.deleteCandle(currentSession.id, lastCandle.candle_index);
       
       // Удаляем свечу из списка
       const updatedCandles = candles.filter(c => c.id !== lastCandle.id);
