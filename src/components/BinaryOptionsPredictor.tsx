@@ -1,18 +1,18 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PredictionSettings from "./predictor/PredictionSettings";
 import PredictionResults from "./predictor/PredictionResults";
 import PredictionGenerator from "./predictor/PredictionGenerator";
 import SessionInfo from "./predictor/SessionInfo";
 import SessionStatus from "./predictor/SessionStatus";
 import CandleHistory from "./predictor/CandleHistory";
-import SessionManager from "./session/SessionManager";
-import CandleInput from "./session/CandleInput";
-import { useSessionManagement } from "@/hooks/useSessionManagement";
-import { useCandleManagement } from "@/hooks/useCandleManagement";
+import OptimizedSessionManager from "./session/OptimizedSessionManager";
+import OptimizedCandleInput from "./session/OptimizedCandleInput";
+import { useApplicationState } from "@/hooks/useApplicationState";
 import { usePredictionGeneration } from "@/hooks/usePredictionGeneration";
 import { usePredictorLogic } from "./hooks/usePredictorLogic";
 import { PredictionConfig } from "@/types/trading";
+import { calculateCandleDateTime } from "@/utils/dateTimeUtils";
 
 interface BinaryOptionsPredictorProps {
   pair: string;
@@ -20,16 +20,21 @@ interface BinaryOptionsPredictorProps {
 }
 
 const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
-  const { 
-    currentSession, 
-    candles, 
-    updateCandles,
-    setCurrentSession,
+  const {
+    sessions,
+    currentSession,
+    candles,
+    isLoading,
+    sessionStats,
     nextCandleIndex,
-    isLoading 
-  } = useSessionManagement();
+    loadSession,
+    createSession,
+    deleteSession,
+    saveCandle,
+    deleteLastCandle,
+    updateCandle
+  } = useApplicationState();
   
-  const { updateCandle } = useCandleManagement(currentSession, updateCandles, setCurrentSession);
   const { predictionResult, isGenerating, generatePrediction } = usePredictionGeneration();
   const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
     predictionInterval: 5,
@@ -43,6 +48,30 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     updateCandle
   });
 
+  // Мемоизированное время следующей свечи
+  const nextCandleTime = useMemo(() => {
+    if (!currentSession) return '';
+    try {
+      return calculateCandleDateTime(
+        currentSession.start_date,
+        currentSession.start_time,
+        currentSession.timeframe,
+        nextCandleIndex
+      );
+    } catch (error) {
+      console.error('Error calculating next candle time:', error);
+      return '';
+    }
+  }, [currentSession, nextCandleIndex]);
+
+  const handleSaveCandle = async (candleData: any) => {
+    const savedCandle = await saveCandle(candleData);
+    if (savedCandle) {
+      handleCandleSaved(savedCandle);
+    }
+    return savedCandle;
+  };
+
   console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
   console.log('BinaryOptionsPredictor: candles count =', candles.length);
   console.log('BinaryOptionsPredictor: isLoading =', isLoading);
@@ -51,19 +80,27 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     <div className="space-y-6">
       <SessionInfo />
 
-      <SessionManager pair={pair} />
+      <OptimizedSessionManager 
+        pair={pair}
+        sessions={sessions}
+        currentSession={currentSession}
+        isLoading={isLoading}
+        onCreateSession={createSession}
+        onLoadSession={loadSession}
+        onDeleteSession={deleteSession}
+      />
 
       <SessionStatus currentSession={currentSession} />
 
       {currentSession && (
-        <CandleInput 
+        <OptimizedCandleInput 
           currentSession={currentSession}
           candles={candles}
-          updateCandles={updateCandles}
-          setCurrentSession={setCurrentSession}
           nextCandleIndex={nextCandleIndex}
           pair={pair}
-          onCandleSaved={handleCandleSaved}
+          nextCandleTime={nextCandleTime}
+          onSave={handleSaveCandle}
+          onDeleteLast={deleteLastCandle}
         />
       )}
 
