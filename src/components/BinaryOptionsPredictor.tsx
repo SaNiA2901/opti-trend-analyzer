@@ -6,9 +6,9 @@ import PredictionGenerator from "./predictor/PredictionGenerator";
 import SessionInfo from "./predictor/SessionInfo";
 import SessionStatus from "./predictor/SessionStatus";
 import CandleHistory from "./predictor/CandleHistory";
-import SimpleSessionManager from "./session/SimpleSessionManager";
-import SimpleCandleInput from "./session/SimpleCandleInput";
-import { useSessionState } from "@/hooks/useSessionState";
+import UnifiedSessionManager from "./session/UnifiedSessionManager";
+import UnifiedCandleInput from "./session/UnifiedCandleInput";
+import { useUnifiedSessionState } from "@/hooks/useUnifiedSessionState";
 import { usePredictionGeneration } from "@/hooks/usePredictionGeneration";
 import { usePredictorLogic } from "./hooks/usePredictorLogic";
 import { PredictionConfig } from "@/types/trading";
@@ -23,8 +23,10 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     currentSession, 
     candles, 
     setCandles,
+    setCurrentSession,
+    nextCandleIndex,
     isLoading 
-  } = useSessionState();
+  } = useUnifiedSessionState();
   
   const { predictionResult, isGenerating, generatePrediction } = usePredictionGeneration();
   const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
@@ -46,14 +48,16 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     <div className="space-y-6">
       <SessionInfo />
 
-      <SimpleSessionManager pair={pair} />
+      <UnifiedSessionManager pair={pair} />
 
       <SessionStatus currentSession={currentSession} />
 
-      <SimpleCandleInput 
+      <UnifiedCandleInput 
         currentSession={currentSession}
         candles={candles}
         setCandles={setCandles}
+        setCurrentSession={setCurrentSession}
+        nextCandleIndex={nextCandleIndex}
         pair={pair}
         onCandleSaved={handleCandleSaved}
       />
