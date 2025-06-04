@@ -1,22 +1,22 @@
 
 import { useCallback } from 'react';
-import { useTradingSession, TradingSession } from '@/hooks/useTradingSession';
+import { TradingSession, CandleData } from '@/types/session';
 import { PredictionConfig } from '@/types/trading';
 
 interface UsePredictorLogicProps {
   currentSession: TradingSession | null;
   generatePrediction: (candleData: any, config: PredictionConfig) => Promise<any>;
   predictionConfig: PredictionConfig;
+  updateCandle: (candleIndex: number, updatedData: Partial<CandleData>) => Promise<CandleData | undefined>;
 }
 
 export const usePredictorLogic = ({
   currentSession,
   generatePrediction,
-  predictionConfig
+  predictionConfig,
+  updateCandle
 }: UsePredictorLogicProps) => {
-  const { updateCandle } = useTradingSession();
-
-  const handleCandleSaved = useCallback(async (candleData: any) => {
+  const handleCandleSaved = useCallback(async (candleData: CandleData) => {
     console.log('usePredictorLogic: Candle saved, generating prediction...', candleData);
     
     if (!candleData || !currentSession) {

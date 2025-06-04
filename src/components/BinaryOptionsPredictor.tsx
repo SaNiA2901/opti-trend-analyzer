@@ -6,9 +6,10 @@ import PredictionGenerator from "./predictor/PredictionGenerator";
 import SessionInfo from "./predictor/SessionInfo";
 import SessionStatus from "./predictor/SessionStatus";
 import CandleHistory from "./predictor/CandleHistory";
-import UnifiedSessionManager from "./session/UnifiedSessionManager";
-import UnifiedCandleInput from "./session/UnifiedCandleInput";
-import { useUnifiedSessionState } from "@/hooks/useUnifiedSessionState";
+import SessionManager from "./session/SessionManager";
+import CandleInput from "./session/CandleInput";
+import { useSessionManagement } from "@/hooks/useSessionManagement";
+import { useCandleManagement } from "@/hooks/useCandleManagement";
 import { usePredictionGeneration } from "@/hooks/usePredictionGeneration";
 import { usePredictorLogic } from "./hooks/usePredictorLogic";
 import { PredictionConfig } from "@/types/trading";
@@ -22,12 +23,13 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   const { 
     currentSession, 
     candles, 
-    setCandles,
+    updateCandles,
     setCurrentSession,
     nextCandleIndex,
     isLoading 
-  } = useUnifiedSessionState();
+  } = useSessionManagement();
   
+  const { updateCandle } = useCandleManagement(currentSession, updateCandles, setCurrentSession);
   const { predictionResult, isGenerating, generatePrediction } = usePredictionGeneration();
   const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
     predictionInterval: 5,
@@ -37,7 +39,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   const { handleCandleSaved } = usePredictorLogic({
     currentSession,
     generatePrediction,
-    predictionConfig
+    predictionConfig,
+    updateCandle
   });
 
   console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
@@ -48,16 +51,15 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     <div className="space-y-6">
       <SessionInfo />
 
-      <UnifiedSessionManager pair={pair} />
+      <SessionManager pair={pair} />
 
       <SessionStatus currentSession={currentSession} />
 
-      {/* Всегда показываем поля ввода, если есть активная сессия */}
       {currentSession && (
-        <UnifiedCandleInput 
+        <CandleInput 
           currentSession={currentSession}
           candles={candles}
-          setCandles={setCandles}
+          updateCandles={updateCandles}
           setCurrentSession={setCurrentSession}
           nextCandleIndex={nextCandleIndex}
           pair={pair}
