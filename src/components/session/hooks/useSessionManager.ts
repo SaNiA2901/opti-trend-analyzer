@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { useTradingSession } from '@/hooks/useTradingSession';
+import { useApplicationState } from '@/hooks/useApplicationState';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface SessionCreationData {
@@ -12,7 +12,7 @@ interface SessionCreationData {
 }
 
 export const useSessionManager = (setShowCreateForm: (show: boolean) => void) => {
-  const { createSession, loadSession, deleteSession } = useTradingSession();
+  const { createSession, loadSession, deleteSession } = useApplicationState();
   const { addError } = useErrorHandler();
 
   const handleCreateSession = useCallback(async (sessionData: SessionCreationData) => {

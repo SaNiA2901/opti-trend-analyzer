@@ -1,9 +1,8 @@
-
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Play, Trash2 } from 'lucide-react';
-import { TradingSession } from '@/hooks/useTradingSession';
+import { TradingSession } from '@/types/session';
 
 interface SessionListProps {
   sessions: TradingSession[];

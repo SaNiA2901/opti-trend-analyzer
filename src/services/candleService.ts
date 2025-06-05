@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CandleData } from '@/hooks/useTradingSession';
+import { CandleData } from '@/types/session';
 
 export const candleService = {
   async saveCandle(candleData: Omit<CandleData, 'id'>): Promise<CandleData> {
@@ -15,7 +15,7 @@ export const candleService = {
 
     const { data, error } = await supabase
       .from('candle_data')
-      .upsert([candleData], { 
+      .upsert(candleData, { 
         onConflict: 'session_id,candle_index',
         ignoreDuplicates: false 
       })

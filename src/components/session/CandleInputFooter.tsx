@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Trash2 } from 'lucide-react';
-import { CandleData } from '@/hooks/useTradingSession';
+import { CandleData } from '@/types/session';
 
 interface CandleInputFooterProps {
   currentSession: any;

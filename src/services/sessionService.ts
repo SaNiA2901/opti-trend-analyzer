@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { TradingSession } from '@/hooks/useTradingSession';
+import { TradingSession } from '@/types/session';
 import { validateSessionData } from '@/utils/candleValidation';
 
 export const sessionService = {

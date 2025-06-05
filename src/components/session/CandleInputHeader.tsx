@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, TrendingUp } from 'lucide-react';
 import { formatCandleDateTime } from '@/utils/dateTimeUtils';
-import { TradingSession } from '@/hooks/useTradingSession';
+import { TradingSession } from '@/types/session';
 
 interface SessionStats {
   totalCandles: number;
