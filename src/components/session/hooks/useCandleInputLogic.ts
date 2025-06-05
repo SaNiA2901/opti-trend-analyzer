@@ -21,8 +21,8 @@ export const useCandleInputLogic = ({
 }: UseCandleInputLogicProps) => {
   const { addError } = useErrorHandler();
   const {
-    formData,
-    errors,
+    candleData,
+    validationErrors,
     updateField,
     resetForm,
     validateForm,
@@ -55,17 +55,17 @@ export const useCandleInputLogic = ({
     setIsSubmitting(true);
     
     try {
-      const candleData = {
+      const candleFormData = {
         session_id: currentSession.id,
         candle_index: nextCandleIndex,
-        open: parseFloat(formData.open),
-        high: parseFloat(formData.high),
-        low: parseFloat(formData.low),
-        close: parseFloat(formData.close),
-        volume: parseFloat(formData.volume)
+        open: parseFloat(candleData.open),
+        high: parseFloat(candleData.high),
+        low: parseFloat(candleData.low),
+        close: parseFloat(candleData.close),
+        volume: parseFloat(candleData.volume)
       };
 
-      const savedCandle = await onSave(candleData);
+      const savedCandle = await onSave(candleFormData);
       if (savedCandle) {
         resetForm();
         console.log('Candle saved successfully:', savedCandle.id);
@@ -80,7 +80,7 @@ export const useCandleInputLogic = ({
   }, [
     currentSession, 
     validateForm, 
-    formData,
+    candleData,
     nextCandleIndex, 
     onSave, 
     resetForm, 
@@ -107,15 +107,15 @@ export const useCandleInputLogic = ({
 
   // Автозаполнение цены открытия
   useEffect(() => {
-    if (lastCandle && !formData.open && !isSubmitting) {
+    if (lastCandle && !candleData.open && !isSubmitting) {
       console.log('Auto-filling open price from last candle:', lastCandle.close);
       updateField('open', lastCandle.close.toString());
     }
-  }, [lastCandle?.close, formData.open, updateField, isSubmitting]);
+  }, [lastCandle?.close, candleData.open, updateField, isSubmitting]);
 
   return {
-    formData,
-    errors,
+    formData: candleData,
+    errors: validationErrors,
     isSubmitting,
     isFormValid,
     lastCandle,

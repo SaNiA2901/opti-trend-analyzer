@@ -7,13 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Save, Trash2, Calendar } from 'lucide-react';
 import { TradingSession, CandleData } from '@/types/session';
-import { useUnifiedCandleOperations } from '@/hooks/useUnifiedCandleOperations';
+import { useApplicationState } from '@/hooks/useApplicationState';
 
 interface UnifiedCandleInputProps {
   currentSession: TradingSession | null;
   candles: CandleData[];
-  setCandles: (candles: CandleData[]) => void;
-  setCurrentSession: (session: TradingSession | null) => void;
   nextCandleIndex: number;
   pair: string;
   onCandleSaved?: (candle: CandleData) => void;
@@ -22,8 +20,6 @@ interface UnifiedCandleInputProps {
 const UnifiedCandleInput = ({ 
   currentSession, 
   candles, 
-  setCandles,
-  setCurrentSession,
   nextCandleIndex,
   pair,
   onCandleSaved 
@@ -38,18 +34,8 @@ const UnifiedCandleInput = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  console.log('UnifiedCandleInput: Rendering with currentSession =', currentSession?.id || 'null');
-  console.log('UnifiedCandleInput: nextCandleIndex =', nextCandleIndex);
-  console.log('UnifiedCandleInput: candles count =', candles.length);
+  const { saveCandle, deleteLastCandle } = useApplicationState();
 
-  const { saveCandle, deleteLastCandle, calculateCandleTime } = useUnifiedCandleOperations(
-    currentSession,
-    candles,
-    setCandles,
-    setCurrentSession
-  );
-
-  const nextCandleTime = calculateCandleTime(nextCandleIndex);
   const lastCandle = candles.length > 0 ? candles[candles.length - 1] : null;
 
   // Автозаполнение цены открытия
@@ -124,8 +110,6 @@ const UnifiedCandleInput = ({
         volume: Number(formData.volume)
       };
 
-      console.log('UnifiedCandleInput: Saving candle with data =', candleData);
-
       const savedCandle = await saveCandle(candleData);
       
       // Очищаем форму, кроме цены открытия для следующей свечи
@@ -165,7 +149,6 @@ const UnifiedCandleInput = ({
   };
 
   if (!currentSession) {
-    console.log('UnifiedCandleInput: No currentSession, returning placeholder');
     return (
       <Card className="p-6 bg-slate-700/30 border-slate-600">
         <div className="text-center text-slate-400">
@@ -174,8 +157,6 @@ const UnifiedCandleInput = ({
       </Card>
     );
   }
-
-  console.log('UnifiedCandleInput: Rendering full component');
 
   const isFormValid = validateForm();
 
@@ -190,16 +171,6 @@ const UnifiedCandleInput = ({
           <Badge className="bg-green-600 text-white">{pair}</Badge>
         </div>
       </div>
-
-      {nextCandleTime && (
-        <div className="mb-4 p-3 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-          <div className="flex items-center space-x-2 text-blue-200">
-            <Calendar className="h-4 w-4" />
-            <span>Время свечи:</span>
-            <span className="font-mono">{new Date(nextCandleTime).toLocaleString()}</span>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <div>

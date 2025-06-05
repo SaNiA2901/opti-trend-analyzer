@@ -6,13 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Save, Trash2, Calendar, Clock } from 'lucide-react';
-import { TradingSession, CandleData } from '@/hooks/useSessionState';
-import { useCandleOperations } from '@/hooks/useCandleOperations';
+import { TradingSession, CandleData } from '@/types/session';
+import { useApplicationState } from '@/hooks/useApplicationState';
 
 interface SimpleCandleInputProps {
   currentSession: TradingSession | null;
   candles: CandleData[];
-  setCandles: (candles: CandleData[]) => void;
   pair: string;
   onCandleSaved?: (candle: CandleData) => void;
 }
@@ -20,7 +19,6 @@ interface SimpleCandleInputProps {
 const SimpleCandleInput = ({ 
   currentSession, 
   candles, 
-  setCandles, 
   pair,
   onCandleSaved 
 }: SimpleCandleInputProps) => {
@@ -34,15 +32,8 @@ const SimpleCandleInput = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const { saveCandle, deleteLastCandle, getNextCandleTime } = useCandleOperations(
-    currentSession,
-    candles,
-    setCandles
-  );
+  const { saveCandle, deleteLastCandle, nextCandleIndex } = useApplicationState();
 
-  // Определяем индекс следующей свечи
-  const nextCandleIndex = candles.length;
-  const nextCandleTime = getNextCandleTime(nextCandleIndex);
   const lastCandle = candles.length > 0 ? candles[candles.length - 1] : null;
 
   // Автозаполнение цены открытия
@@ -180,16 +171,6 @@ const SimpleCandleInput = ({
           <Badge className="bg-green-600 text-white">{pair}</Badge>
         </div>
       </div>
-
-      {nextCandleTime && (
-        <div className="mb-4 p-3 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-          <div className="flex items-center space-x-2 text-blue-200">
-            <Calendar className="h-4 w-4" />
-            <span>Время свечи:</span>
-            <span className="font-mono">{new Date(nextCandleTime).toLocaleString()}</span>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <div>

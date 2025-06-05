@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Plus, Play, Trash2 } from 'lucide-react';
-import { useUnifiedSessionState } from '@/hooks/useUnifiedSessionState';
+import { useApplicationState } from '@/hooks/useApplicationState';
 import SessionForm from './SessionForm';
 
 interface UnifiedSessionManagerProps {
@@ -19,7 +19,7 @@ const UnifiedSessionManager = ({ pair }: UnifiedSessionManagerProps) => {
     createSession,
     loadSession,
     deleteSession
-  } = useUnifiedSessionState();
+  } = useApplicationState();
   
   const [showCreateForm, setShowCreateForm] = useState(false);
 

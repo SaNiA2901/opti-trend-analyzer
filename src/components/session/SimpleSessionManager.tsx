@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Plus, Play, Trash2 } from 'lucide-react';
-import { useSessionState } from '@/hooks/useSessionState';
+import { useApplicationState } from '@/hooks/useApplicationState';
 import SessionForm from './SessionForm';
 
 interface SimpleSessionManagerProps {
@@ -19,7 +19,7 @@ const SimpleSessionManager = ({ pair }: SimpleSessionManagerProps) => {
     createSession,
     loadSession,
     deleteSession
-  } = useSessionState();
+  } = useApplicationState();
   
   const [showCreateForm, setShowCreateForm] = useState(false);
 
