@@ -5,26 +5,70 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Plus } from 'lucide-react';
 import { TradingSession } from '@/types/session';
-import { useApplicationState } from '@/hooks/useApplicationState';
-import { useSessionManager } from './hooks/useSessionManager';
 import SessionForm from './SessionForm';
 import SessionCard from './SessionCard';
 
-interface SessionManagerProps {
+interface OptimizedSessionManagerProps {
   pair: string;
+  sessions: TradingSession[];
+  currentSession: TradingSession | null;
+  isLoading: boolean;
+  onCreateSession: (sessionData: {
+    session_name: string;
+    pair: string;
+    timeframe: string;
+    start_date: string;
+    start_time: string;
+  }) => Promise<TradingSession>;
+  onLoadSession: (sessionId: string) => Promise<TradingSession>;
+  onDeleteSession: (sessionId: string) => Promise<void>;
 }
 
-const SessionManager = ({ pair }: SessionManagerProps) => {
+const OptimizedSessionManager = ({ 
+  pair,
+  sessions,
+  currentSession,
+  isLoading,
+  onCreateSession,
+  onLoadSession,
+  onDeleteSession
+}: OptimizedSessionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const { sessions, currentSession, isLoading } = useApplicationState();
-  
-  const { 
-    handleCreateSession, 
-    handleLoadSession, 
-    handleDeleteSession 
-  } = useSessionManager(setShowCreateForm);
 
   const filteredSessions = sessions.filter(s => s.pair === pair);
+
+  const handleCreateSession = async (sessionData: {
+    session_name: string;
+    pair: string;
+    timeframe: string;
+    start_date: string;
+    start_time: string;
+  }) => {
+    try {
+      await onCreateSession(sessionData);
+      setShowCreateForm(false);
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
+  };
+
+  const handleLoadSession = async (sessionId: string) => {
+    try {
+      await onLoadSession(sessionId);
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (window.confirm('Вы уверены, что хотите удалить эту сессию?')) {
+      try {
+        await onDeleteSession(sessionId);
+      } catch (error) {
+        console.error('Failed to delete session:', error);
+      }
+    }
+  };
 
   return (
     <Card className="p-6 bg-slate-800/50 border-slate-700">
@@ -85,4 +129,4 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
   );
 };
 
-export default SessionManager;
+export default OptimizedSessionManager;
