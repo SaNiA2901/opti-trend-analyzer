@@ -3,46 +3,32 @@ import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { TradingSession, CandleData } from '@/types/session';
 import { calculateCandleDateTime } from '@/utils/dateTimeUtils';
-import CandleInputHeader from './CandleInputHeader';
-import CandleInputForm from './CandleInputForm';
-import CandleInputValidation from './CandleInputValidation';
-import CandleInputActions from './CandleInputActions';
-import CandleInputStats from './CandleInputStats';
-import { useCandleInputLogic } from './useCandleInputLogic';
+import { useApplicationState } from '@/hooks/useApplicationState';
+import CandleInputHeader from './candle-input/CandleInputHeader';
+import CandleInputForm from './candle-input/CandleInputForm';
+import CandleInputValidation from './candle-input/CandleInputValidation';
+import CandleInputActions from './candle-input/CandleInputActions';
+import CandleInputStats from './candle-input/CandleInputStats';
+import { useCandleInputLogic } from '@/hooks/candle/useCandleInputLogic';
 
-interface CandleInputContainerProps {
+interface CandleInputProps {
   currentSession: TradingSession;
   candles: CandleData[];
-  nextCandleIndex: number;
   pair: string;
-  onSave: (candleData: Omit<CandleData, 'id' | 'candle_datetime'>) => Promise<CandleData>;
-  onDeleteLast: () => Promise<void>;
+  onCandleSaved: (candleData: CandleData) => Promise<void>;
 }
 
-const CandleInputContainer = ({ 
+const CandleInput = ({ 
   currentSession,
   candles,
-  nextCandleIndex,
   pair,
-  onSave,
-  onDeleteLast
-}: CandleInputContainerProps) => {
-  const {
-    formData,
-    errors,
-    isSubmitting,
-    isFormValid,
-    lastCandle,
-    updateField,
-    handleSave,
-    handleDeleteLast
-  } = useCandleInputLogic({
-    currentSession,
-    candles,
-    nextCandleIndex,
-    onSave,
-    onDeleteLast
-  });
+  onCandleSaved
+}: CandleInputProps) => {
+  const { saveCandle, deleteLastCandle } = useApplicationState();
+  
+  const nextCandleIndex = useMemo(() => {
+    return Math.max(currentSession.current_candle_index + 1, candles.length);
+  }, [currentSession.current_candle_index, candles.length]);
 
   const nextCandleTime = useMemo(() => {
     try {
@@ -57,6 +43,29 @@ const CandleInputContainer = ({
       return '';
     }
   }, [currentSession, nextCandleIndex]);
+
+  const {
+    formData,
+    errors,
+    isSubmitting,
+    isFormValid,
+    lastCandle,
+    updateField,
+    handleSave,
+    handleDeleteLast
+  } = useCandleInputLogic({
+    currentSession,
+    candles,
+    nextCandleIndex,
+    onSave: async (candleData) => {
+      const savedCandle = await saveCandle(candleData);
+      if (savedCandle) {
+        await onCandleSaved(savedCandle);
+      }
+      return savedCandle;
+    },
+    onDeleteLast: deleteLastCandle
+  });
 
   return (
     <Card className="p-6 bg-slate-700/30 border-slate-600">
@@ -91,4 +100,4 @@ const CandleInputContainer = ({
   );
 };
 
-export default CandleInputContainer;
+export default CandleInput;

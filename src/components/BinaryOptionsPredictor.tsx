@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp } from 'lucide-react';
-import SimpleSessionManager from './session/SimpleSessionManager';
-import SimpleCandleInput from './session/SimpleCandleInput';
+import SessionManager from './session/SessionManager';
+import CandleInput from './session/CandleInput';
 import PatternDetection from './patterns/PatternDetection';
 import { useApplicationState } from '@/hooks/useApplicationState';
 import { usePredictionGeneration } from '@/hooks/usePredictionGeneration';
@@ -38,10 +38,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     updateCandle
   });
 
-  console.log('BinaryOptionsPredictor: currentSession =', currentSession);
-  console.log('BinaryOptionsPredictor: candles count =', candles.length);
-  console.log('BinaryOptionsPredictor: isLoading =', isLoading);
-
   return (
     <div className="space-y-6">
       <Card className="p-6 bg-slate-800/50 border-slate-700">
@@ -71,12 +67,12 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           </TabsList>
 
           <TabsContent value="session">
-            <SimpleSessionManager pair={pair} />
+            <SessionManager pair={pair} />
           </TabsContent>
 
           <TabsContent value="input">
             {currentSession ? (
-              <SimpleCandleInput 
+              <CandleInput 
                 currentSession={currentSession}
                 candles={candles}
                 pair={pair}
