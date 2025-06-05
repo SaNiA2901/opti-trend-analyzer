@@ -1,6 +1,9 @@
 
+import { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { TradingSession, CandleData } from '@/types/session';
+import { calculateCandleDateTime } from '@/utils/dateTimeUtils';
+import { useApplicationState } from '@/hooks/useApplicationState';
 import CandleInputHeader from './candle-input/CandleInputHeader';
 import CandleInputForm from './candle-input/CandleInputForm';
 import CandleInputValidation from './candle-input/CandleInputValidation';
@@ -8,25 +11,39 @@ import CandleInputActions from './candle-input/CandleInputActions';
 import CandleInputStats from './candle-input/CandleInputStats';
 import { useCandleInputLogic } from './candle-input/useCandleInputLogic';
 
-interface OptimizedCandleInputProps {
+interface CandleInputProps {
   currentSession: TradingSession;
   candles: CandleData[];
-  nextCandleIndex: number;
   pair: string;
-  nextCandleTime: string;
-  onSave: (candleData: Omit<CandleData, 'id' | 'candle_datetime'>) => Promise<CandleData>;
-  onDeleteLast: () => Promise<void>;
+  onCandleSaved: (candleData: CandleData) => Promise<void>;
 }
 
-const OptimizedCandleInput = ({ 
+const CandleInput = ({ 
   currentSession,
   candles,
-  nextCandleIndex,
   pair,
-  nextCandleTime,
-  onSave,
-  onDeleteLast
-}: OptimizedCandleInputProps) => {
+  onCandleSaved
+}: CandleInputProps) => {
+  const { saveCandle, deleteLastCandle } = useApplicationState();
+  
+  const nextCandleIndex = useMemo(() => {
+    return Math.max(currentSession.current_candle_index + 1, candles.length);
+  }, [currentSession.current_candle_index, candles.length]);
+
+  const nextCandleTime = useMemo(() => {
+    try {
+      return calculateCandleDateTime(
+        currentSession.start_date,
+        currentSession.start_time,
+        currentSession.timeframe,
+        nextCandleIndex
+      );
+    } catch (error) {
+      console.error('Error calculating next candle time:', error);
+      return '';
+    }
+  }, [currentSession, nextCandleIndex]);
+
   const {
     formData,
     errors,
@@ -40,8 +57,14 @@ const OptimizedCandleInput = ({
     currentSession,
     candles,
     nextCandleIndex,
-    onSave,
-    onDeleteLast
+    onSave: async (candleData) => {
+      const savedCandle = await saveCandle(candleData);
+      if (savedCandle) {
+        await onCandleSaved(savedCandle);
+      }
+      return savedCandle;
+    },
+    onDeleteLast: deleteLastCandle
   });
 
   return (
@@ -77,4 +100,4 @@ const OptimizedCandleInput = ({
   );
 };
 
-export default OptimizedCandleInput;
+export default CandleInput;
