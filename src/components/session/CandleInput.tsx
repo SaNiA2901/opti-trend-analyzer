@@ -9,7 +9,7 @@ import CandleInputForm from './candle-input/CandleInputForm';
 import CandleInputValidation from './candle-input/CandleInputValidation';
 import CandleInputActions from './candle-input/CandleInputActions';
 import CandleInputStats from './candle-input/CandleInputStats';
-import { useCandleInputLogic } from './candle-input/useCandleInputLogic';
+import { useCandleInputLogic } from '@/hooks/candle/useCandleInputLogic';
 
 interface CandleInputProps {
   currentSession: TradingSession;

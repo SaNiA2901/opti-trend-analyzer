@@ -38,10 +38,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     updateCandle
   });
 
-  console.log('BinaryOptionsPredictor: currentSession =', currentSession);
-  console.log('BinaryOptionsPredictor: candles count =', candles.length);
-  console.log('BinaryOptionsPredictor: isLoading =', isLoading);
-
   return (
     <div className="space-y-6">
       <Card className="p-6 bg-slate-800/50 border-slate-700">

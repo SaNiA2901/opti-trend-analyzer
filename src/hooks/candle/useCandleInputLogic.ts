@@ -1,8 +1,8 @@
 
 import { useEffect, useMemo } from 'react';
 import { TradingSession, CandleData } from '@/types/session';
-import { useCandleForm } from '@/hooks/candle/useCandleForm';
-import { useCandleActions } from '@/hooks/candle/useCandleActions';
+import { useCandleForm } from './useCandleForm';
+import { useCandleActions } from './useCandleActions';
 
 interface UseCandleInputLogicProps {
   currentSession: TradingSession | null;
