@@ -1,17 +1,15 @@
 
-import { useState } from "react";
-import PredictionSettings from "./predictor/PredictionSettings";
-import PredictionResults from "./predictor/PredictionResults";
-import PredictionGenerator from "./predictor/PredictionGenerator";
-import SessionInfo from "./predictor/SessionInfo";
-import SessionStatus from "./predictor/SessionStatus";
-import CandleHistory from "./predictor/CandleHistory";
-import OptimizedSessionManager from "./session/OptimizedSessionManager";
-import CandleInputContainer from "./session/candle-input/CandleInputContainer";
-import { useApplicationState } from "@/hooks/useApplicationState";
-import { usePredictionGeneration } from "@/hooks/usePredictionGeneration";
-import { usePredictorLogic } from "./hooks/usePredictorLogic";
-import { PredictionConfig } from "@/types/trading";
+import { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendingUp } from 'lucide-react';
+import SimpleSessionManager from './session/SimpleSessionManager';
+import SimpleCandleInput from './session/SimpleCandleInput';
+import PatternDetection from './patterns/PatternDetection';
+import { useApplicationState } from '@/hooks/useApplicationState';
+import { usePredictionGeneration } from '@/hooks/usePredictionGeneration';
+import { usePredictorLogic } from './hooks/usePredictorLogic';
+import { PredictionConfig } from '@/types/trading';
 
 interface BinaryOptionsPredictorProps {
   pair: string;
@@ -20,25 +18,18 @@ interface BinaryOptionsPredictorProps {
 
 const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
   const {
-    sessions,
     currentSession,
     candles,
     isLoading,
-    sessionStats,
-    nextCandleIndex,
-    loadSession,
-    createSession,
-    deleteSession,
-    saveCandle,
-    deleteLastCandle,
     updateCandle
   } = useApplicationState();
-  
-  const { predictionResult, isGenerating, generatePrediction } = usePredictionGeneration();
-  const [predictionConfig, setPredictionConfig] = useState<PredictionConfig>({
+
+  const [predictionConfig] = useState<PredictionConfig>({
     predictionInterval: 5,
     analysisMode: 'session'
   });
+
+  const { generatePrediction } = usePredictionGeneration();
 
   const { handleCandleSaved } = usePredictorLogic({
     currentSession,
@@ -47,60 +38,64 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     updateCandle
   });
 
-  const handleSaveCandle = async (candleData: any) => {
-    const savedCandle = await saveCandle(candleData);
-    if (savedCandle) {
-      handleCandleSaved(savedCandle);
-    }
-    return savedCandle;
-  };
-
-  console.log('BinaryOptionsPredictor: currentSession =', currentSession?.id || 'null');
+  console.log('BinaryOptionsPredictor: currentSession =', currentSession);
   console.log('BinaryOptionsPredictor: candles count =', candles.length);
   console.log('BinaryOptionsPredictor: isLoading =', isLoading);
 
   return (
     <div className="space-y-6">
-      <SessionInfo />
+      <Card className="p-6 bg-slate-800/50 border-slate-700">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-blue-600 rounded-lg">
+            <TrendingUp className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Предиктор бинарных опционов</h2>
+            <p className="text-slate-400">
+              Анализ и прогнозирование для {pair} • {timeframe}
+            </p>
+          </div>
+        </div>
 
-      <OptimizedSessionManager 
-        pair={pair}
-        sessions={sessions}
-        currentSession={currentSession}
-        isLoading={isLoading}
-        onCreateSession={createSession}
-        onLoadSession={loadSession}
-        onDeleteSession={deleteSession}
-      />
+        <Tabs defaultValue="session" className="space-y-6">
+          <TabsList className="bg-slate-700 border-slate-600">
+            <TabsTrigger value="session" className="data-[state=active]:bg-blue-600">
+              Управление сессией
+            </TabsTrigger>
+            <TabsTrigger value="input" className="data-[state=active]:bg-blue-600">
+              Ввод данных
+            </TabsTrigger>
+            <TabsTrigger value="patterns" className="data-[state=active]:bg-blue-600">
+              Паттерны
+            </TabsTrigger>
+          </TabsList>
 
-      <SessionStatus currentSession={currentSession} />
+          <TabsContent value="session">
+            <SimpleSessionManager pair={pair} />
+          </TabsContent>
 
-      {currentSession && (
-        <CandleInputContainer 
-          currentSession={currentSession}
-          candles={candles}
-          nextCandleIndex={nextCandleIndex}
-          pair={pair}
-          onSave={handleSaveCandle}
-          onDeleteLast={deleteLastCandle}
-        />
-      )}
+          <TabsContent value="input">
+            {currentSession ? (
+              <SimpleCandleInput 
+                currentSession={currentSession}
+                candles={candles}
+                pair={pair}
+                onCandleSaved={handleCandleSaved}
+              />
+            ) : (
+              <Card className="p-8 bg-slate-700/30 border-slate-600 text-center">
+                <p className="text-slate-400">
+                  Создайте или загрузите сессию для начала ввода данных
+                </p>
+              </Card>
+            )}
+          </TabsContent>
 
-      <PredictionSettings 
-        config={predictionConfig}
-        onChange={setPredictionConfig}
-      />
-
-      <PredictionGenerator isGenerating={isGenerating} />
-
-      {predictionResult && !isGenerating && (
-        <PredictionResults 
-          result={predictionResult}
-          pair={pair}
-        />
-      )}
-
-      <CandleHistory candles={candles} />
+          <TabsContent value="patterns">
+            <PatternDetection candles={candles} />
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };

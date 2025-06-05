@@ -23,7 +23,17 @@ const Index = () => {
 
   const currencyPairs = [
     "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", 
-    "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP", "BTC/USD"
+    "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP",
+    "EUR/JPY", "GBP/JPY", "AUD/JPY", "CAD/JPY",
+    "CHF/JPY", "NZD/JPY", "EUR/CHF", "GBP/CHF",
+    "AUD/CHF", "CAD/CHF", "EUR/AUD", "GBP/AUD",
+    "USD/NOK", "USD/SEK", "USD/DKK", "USD/PLN",
+    "USD/CZK", "USD/HUF", "USD/RUB", "USD/TRY",
+    "USD/ZAR", "USD/MXN", "USD/SGD", "USD/HKD",
+    "EUR/NOK", "EUR/SEK", "EUR/DKK", "EUR/PLN",
+    "GBP/NOK", "GBP/SEK", "AUD/CAD", "NZD/CAD",
+    "BTC/USD", "ETH/USD", "LTC/USD", "XRP/USD",
+    "ADA/USD", "DOT/USD", "LINK/USD", "BCH/USD"
   ];
 
   const timeframes = [
@@ -53,10 +63,10 @@ const Index = () => {
             
             <div className="flex items-center space-x-4">
               <Select value={selectedPair} onValueChange={setSelectedPair}>
-                <SelectTrigger className="w-32 bg-slate-800 border-slate-600 text-white">
+                <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
+                <SelectContent className="bg-slate-800 border-slate-600 max-h-60 overflow-y-auto">
                   {currencyPairs.map(pair => (
                     <SelectItem key={pair} value={pair} className="text-white focus:bg-slate-700">
                       {pair}
