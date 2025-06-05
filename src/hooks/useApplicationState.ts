@@ -2,10 +2,7 @@
 import { useSessionState } from './session/useSessionState';
 import { useSessionStats } from './session/useSessionStats';
 import { useSessionInitialization } from './session/useSessionInitialization';
-import { useSessionCreation } from './session/useSessionCreation';
-import { useSessionNavigation } from './session/useSessionNavigation';
-import { useSessionDeletion } from './session/useSessionDeletion';
-import { useCandleSaving } from './candle/useCandleSaving';
+import { useSessionOperations } from './session/useSessionOperations';
 import { useCandleOperations } from './candle/useCandleOperations';
 
 export const useApplicationState = () => {
@@ -26,35 +23,21 @@ export const useApplicationState = () => {
 
   const { loadSessions } = useSessionInitialization(setSessions, setIsLoading);
 
-  const { createSession } = useSessionCreation(
-    setIsLoading,
-    setCurrentSession,
-    updateCandles,
-    loadSessions
-  );
-
-  const { loadSession } = useSessionNavigation(
-    setIsLoading,
-    setCurrentSession,
-    updateCandles
-  );
-
-  const { deleteSession } = useSessionDeletion(
+  const {
+    createSession,
+    loadSession,
+    deleteSession
+  } = useSessionOperations(
     setIsLoading,
     setSessions,
     setCurrentSession,
-    loadSessions
+    updateCandles
   );
 
-  const { saveCandle } = useCandleSaving(
+  const { saveCandle, deleteCandle, updateCandle } = useCandleOperations(
     currentSession,
     updateCandles,
     setCurrentSession
-  );
-
-  const { deleteCandle, updateCandle } = useCandleOperations(
-    currentSession,
-    updateCandles
   );
 
   const deleteLastCandle = async () => {

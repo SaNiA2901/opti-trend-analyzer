@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import PredictionSettings from "./predictor/PredictionSettings";
 import PredictionResults from "./predictor/PredictionResults";
 import PredictionGenerator from "./predictor/PredictionGenerator";
@@ -7,12 +7,11 @@ import SessionInfo from "./predictor/SessionInfo";
 import SessionStatus from "./predictor/SessionStatus";
 import CandleHistory from "./predictor/CandleHistory";
 import OptimizedSessionManager from "./session/OptimizedSessionManager";
-import OptimizedCandleInput from "./session/OptimizedCandleInput";
+import CandleInputContainer from "./session/candle-input/CandleInputContainer";
 import { useApplicationState } from "@/hooks/useApplicationState";
 import { usePredictionGeneration } from "@/hooks/usePredictionGeneration";
 import { usePredictorLogic } from "./hooks/usePredictorLogic";
 import { PredictionConfig } from "@/types/trading";
-import { calculateCandleDateTime } from "@/utils/dateTimeUtils";
 
 interface BinaryOptionsPredictorProps {
   pair: string;
@@ -48,22 +47,6 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
     updateCandle
   });
 
-  // Мемоизированное время следующей свечи
-  const nextCandleTime = useMemo(() => {
-    if (!currentSession) return '';
-    try {
-      return calculateCandleDateTime(
-        currentSession.start_date,
-        currentSession.start_time,
-        currentSession.timeframe,
-        nextCandleIndex
-      );
-    } catch (error) {
-      console.error('Error calculating next candle time:', error);
-      return '';
-    }
-  }, [currentSession, nextCandleIndex]);
-
   const handleSaveCandle = async (candleData: any) => {
     const savedCandle = await saveCandle(candleData);
     if (savedCandle) {
@@ -93,12 +76,11 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       <SessionStatus currentSession={currentSession} />
 
       {currentSession && (
-        <OptimizedCandleInput 
+        <CandleInputContainer 
           currentSession={currentSession}
           candles={candles}
           nextCandleIndex={nextCandleIndex}
           pair={pair}
-          nextCandleTime={nextCandleTime}
           onSave={handleSaveCandle}
           onDeleteLast={deleteLastCandle}
         />
