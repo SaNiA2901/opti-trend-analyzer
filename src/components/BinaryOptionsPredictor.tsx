@@ -77,6 +77,9 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
           <TabsContent value="input">
             {currentSession ? (
               <SimpleCandleInput 
+                currentSession={currentSession}
+                candles={candles}
+                pair={pair}
                 onCandleSaved={handleCandleSaved}
               />
             ) : (
