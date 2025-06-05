@@ -22,7 +22,17 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
 
   useEffect(() => {
     const generateMarketData = () => {
-      const pairs = ["EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "BTC/USD"];
+      const pairs = [
+        "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", 
+        "NZD/USD", "EUR/GBP", "EUR/JPY", "GBP/JPY", "AUD/JPY", "CAD/JPY",
+        "CHF/JPY", "NZD/JPY", "EUR/CHF", "GBP/CHF", "AUD/CHF", "CAD/CHF",
+        "EUR/AUD", "GBP/AUD", "USD/NOK", "USD/SEK", "USD/DKK", "USD/PLN",
+        "USD/CZK", "USD/HUF", "USD/RUB", "USD/TRY", "USD/ZAR", "USD/MXN",
+        "USD/SGD", "USD/HKD", "EUR/NOK", "EUR/SEK", "EUR/DKK", "EUR/PLN",
+        "GBP/NOK", "GBP/SEK", "AUD/CAD", "NZD/CAD", "BTC/USD", "ETH/USD",
+        "LTC/USD", "XRP/USD", "ADA/USD", "DOT/USD", "LINK/USD", "BCH/USD"
+      ];
+      
       const data = pairs.map(pair => {
         const basePrice = pair === "EUR/USD" ? 1.0850 : 
                          pair === "GBP/USD" ? 1.2650 :
@@ -30,10 +40,15 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
                          pair === "USD/CHF" ? 0.8950 :
                          pair === "AUD/USD" ? 0.6550 : 
                          pair === "USD/CAD" ? 1.3450 :
-                         pair === "BTC/USD" ? 67500 : 1.0950;
+                         pair === "BTC/USD" ? 67500 :
+                         pair === "ETH/USD" ? 3200 :
+                         pair === "LTC/USD" ? 85 :
+                         pair.includes("BTC") || pair.includes("ETH") || pair.includes("LTC") || 
+                         pair.includes("XRP") || pair.includes("ADA") || pair.includes("DOT") || 
+                         pair.includes("LINK") || pair.includes("BCH") ? 0.5 : 1.0950;
 
-        const change = pair === "BTC/USD" ? 
-          (Math.random() - 0.5) * 8 : // Bitcoin более волатилен
+        const change = pair.includes("/USD") && (pair.includes("BTC") || pair.includes("ETH")) ? 
+          (Math.random() - 0.5) * 8 : // Крипто более волатильна
           (Math.random() - 0.5) * 2; // -1% to +1% для валют
         
         const price = basePrice * (1 + change / 100);
@@ -42,11 +57,11 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
           pair,
           price,
           change,
-          volume: pair === "BTC/USD" ? 
-            (Math.random() * 20000 + 10000).toFixed(0) + 'M' : // Больший объем для BTC
+          volume: pair.includes("BTC") || pair.includes("ETH") ? 
+            (Math.random() * 20000 + 10000).toFixed(0) + 'M' : // Больший объем для крипто
             (Math.random() * 5000 + 1000).toFixed(0) + 'M',
-          volatility: pair === "BTC/USD" ?
-            (Math.random() > 0.5 ? 'HIGH' : 'MEDIUM') : // BTC чаще высокая волатильность
+          volatility: (pair.includes("BTC") || pair.includes("ETH")) ?
+            (Math.random() > 0.5 ? 'HIGH' : 'MEDIUM') : // Крипто чаще высокая волатильность
             (Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH'
         };
       });
@@ -61,6 +76,8 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
 
   const formatPrice = (pair: string, price: number) => {
     if (pair === "BTC/USD") return `$${price.toFixed(0)}`;
+    if (pair === "ETH/USD") return `$${price.toFixed(0)}`;
+    if (pair.includes("USD") && (pair.includes("BTC") || pair.includes("ETH") || pair.includes("LTC"))) return `$${price.toFixed(2)}`;
     return pair.includes("JPY") ? price.toFixed(2) : price.toFixed(4);
   };
 
@@ -80,6 +97,12 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
     }
   };
 
+  const isCrypto = (pair: string) => {
+    return pair.includes("BTC") || pair.includes("ETH") || pair.includes("LTC") || 
+           pair.includes("XRP") || pair.includes("ADA") || pair.includes("DOT") || 
+           pair.includes("LINK") || pair.includes("BCH");
+  };
+
   return (
     <div className="space-y-6">
       {/* Market Status */}
@@ -92,7 +115,7 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
           </Badge>
         </div>
         <p className="text-slate-400 text-sm">
-          {selectedPair === "BTC/USD" ? "Криптовалюты торгуются 24/7" : "Форекс торгуется 24/5"}
+          {isCrypto(selectedPair) ? "Криптовалюты торгуются 24/7" : "Форекс торгуется 24/5"}
         </p>
       </Card>
 
@@ -133,90 +156,15 @@ const MarketOverview = ({ selectedPair }: MarketOverviewProps) => {
                 {getVolatilityText(marketData.find(d => d.pair === selectedPair)!.volatility)}
               </Badge>
             </div>
+
+            {isCrypto(selectedPair) && (
+              <div className="flex justify-between">
+                <span className="text-slate-400">Тип актива</span>
+                <Badge className="bg-orange-600 text-white">КРИПТО</Badge>
+              </div>
+            )}
           </div>
         )}
-      </Card>
-
-      {/* All Pairs */}
-      <Card className="p-4 bg-slate-800/50 border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Все торговые пары</h3>
-        
-        <div className="space-y-3">
-          {marketData.map((data) => (
-            <div 
-              key={data.pair}
-              className={`flex items-center justify-between p-3 rounded-lg border ${
-                data.pair === selectedPair ? 'border-blue-500 bg-blue-500/10' : 'border-slate-600 bg-slate-700/30'
-              }`}
-            >
-              <div>
-                <div className="text-white font-medium flex items-center space-x-2">
-                  <span>{data.pair}</span>
-                  {data.pair === "BTC/USD" && (
-                    <Badge className="bg-orange-600 text-white text-xs">КРИПТО</Badge>
-                  )}
-                </div>
-                <div className="text-slate-400 text-sm">{formatPrice(data.pair, data.price)}</div>
-              </div>
-              
-              <div className="text-right">
-                <div className={`flex items-center space-x-1 ${data.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {data.change > 0 ? 
-                    <TrendingUp className="h-3 w-3" /> : 
-                    <TrendingDown className="h-3 w-3" />
-                  }
-                  <span className="text-sm font-medium">
-                    {data.change > 0 ? '+' : ''}{data.change.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="text-slate-400 text-xs">{data.volume}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Market News */}
-      <Card className="p-4 bg-slate-800/50 border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Новости рынка</h3>
-        
-        <div className="space-y-3">
-          {selectedPair === "BTC/USD" ? (
-            <>
-              <div className="border-l-4 border-orange-500 pl-3">
-                <p className="text-white text-sm font-medium">Bitcoin ETF показывает рекордные притоки</p>
-                <p className="text-slate-400 text-xs">1 час назад</p>
-              </div>
-              
-              <div className="border-l-4 border-green-500 pl-3">
-                <p className="text-white text-sm font-medium">Институциональные инвесторы увеличивают позиции</p>
-                <p className="text-slate-400 text-xs">3 часа назад</p>
-              </div>
-              
-              <div className="border-l-4 border-blue-500 pl-3">
-                <p className="text-white text-sm font-medium">Новые регулятивные решения по криптовалютам</p>
-                <p className="text-slate-400 text-xs">6 часов назад</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="border-l-4 border-blue-500 pl-3">
-                <p className="text-white text-sm font-medium">ЕЦБ оставил ставки без изменений</p>
-                <p className="text-slate-400 text-xs">2 часа назад</p>
-              </div>
-              
-              <div className="border-l-4 border-yellow-500 pl-3">
-                <p className="text-white text-sm font-medium">Данные по NFP превысили ожидания</p>
-                <p className="text-slate-400 text-xs">5 часов назад</p>
-              </div>
-              
-              <div className="border-l-4 border-red-500 pl-3">
-                <p className="text-white text-sm font-medium">Напряженность в торговых отношениях</p>
-                <p className="text-slate-400 text-xs">1 день назад</p>
-              </div>
-            </>
-          )}
-        </div>
       </Card>
     </div>
   );
