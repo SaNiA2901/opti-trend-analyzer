@@ -20,28 +20,12 @@ export const useSessionOperations = (
 ) => {
   const { addError } = useErrorHandler();
 
-  const loadSessions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await sessionService.loadSessions();
-      setSessions(data);
-      console.log('Sessions loaded:', data.length);
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-      addError('Ошибка загрузки сессий', error instanceof Error ? error.message : 'Unknown error');
-      setSessions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setSessions, setIsLoading, addError]);
-
   const createSession = useCallback(async (sessionData: SessionCreationData) => {
     setIsLoading(true);
     try {
       const session = await sessionService.createSession(sessionData);
       setCurrentSession(session);
       updateCandles(() => []);
-      await loadSessions();
       console.log('Session created:', session.id);
       return session;
     } catch (error) {
@@ -51,7 +35,7 @@ export const useSessionOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setCurrentSession, updateCandles, loadSessions, addError]);
+  }, [setIsLoading, setCurrentSession, updateCandles, addError]);
 
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
@@ -77,7 +61,6 @@ export const useSessionOperations = (
     try {
       await sessionService.deleteSession(sessionId);
       setCurrentSession(null);
-      await loadSessions();
       console.log('Session deleted:', sessionId);
     } catch (error) {
       console.error('Failed to delete session:', error);
@@ -86,10 +69,9 @@ export const useSessionOperations = (
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setCurrentSession, loadSessions, addError]);
+  }, [setIsLoading, setCurrentSession, addError]);
 
   return {
-    loadSessions,
     createSession,
     loadSession,
     deleteSession

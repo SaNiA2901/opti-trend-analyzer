@@ -1,43 +1,27 @@
 
-import { useSessionState } from './session/useSessionState';
-import { useSessionStats } from './session/useSessionStats';
-import { useSessionInitialization } from './session/useSessionInitialization';
-import { useSessionOperations } from './session/useSessionOperations';
+import { useSessionManager } from './session/useSessionManager';
 import { useCandleOperations } from './candle/useCandleOperations';
 
 export const useApplicationState = () => {
   const {
     sessions,
-    setSessions,
     currentSession,
-    setCurrentSession,
     candles,
-    setCandles,
     isLoading,
-    setIsLoading,
-    updateCandles,
-    resetSessionState
-  } = useSessionState();
-
-  const { sessionStats, nextCandleIndex } = useSessionStats(currentSession, candles);
-
-  const { loadSessions } = useSessionInitialization(setSessions, setIsLoading);
-
-  const {
+    sessionStats,
+    nextCandleIndex,
     createSession,
     loadSession,
-    deleteSession
-  } = useSessionOperations(
-    setIsLoading,
-    setSessions,
-    setCurrentSession,
+    deleteSession,
+    resetSessionState,
     updateCandles
-  );
+  } = useSessionManager();
 
   const { saveCandle, deleteCandle, updateCandle } = useCandleOperations(
     currentSession,
     updateCandles,
-    setCurrentSession
+    // Функция для обновления текущей сессии (будет реализована в следующем этапе)
+    () => {}
   );
 
   const deleteLastCandle = async () => {
@@ -49,18 +33,23 @@ export const useApplicationState = () => {
   };
 
   return {
+    // Состояние сессий
     sessions,
     currentSession,
     candles,
     isLoading,
     sessionStats,
     nextCandleIndex,
+    
+    // Операции с сессиями
     loadSession,
     createSession,
     deleteSession,
+    resetSessionState,
+    
+    // Операции со свечами
     saveCandle,
     deleteLastCandle,
-    updateCandle,
-    resetSessionState
+    updateCandle
   };
 };
