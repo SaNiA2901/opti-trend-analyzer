@@ -7,9 +7,7 @@ import SessionManager from './session/SessionManager';
 import CandleInput from './session/CandleInput';
 import PatternDetection from './patterns/PatternDetection';
 import { useApplicationState } from '@/hooks/useApplicationState';
-import { usePredictionGeneration } from '@/hooks/usePredictionGeneration';
-import { usePredictorLogic } from './hooks/usePredictorLogic';
-import { PredictionConfig } from '@/types/trading';
+import { usePredictionLogic } from '@/hooks/usePredictionLogic';
 
 interface BinaryOptionsPredictorProps {
   pair: string;
@@ -20,22 +18,13 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
   const {
     currentSession,
     candles,
-    isLoading,
-    updateCandle
+    isLoading
   } = useApplicationState();
 
-  const [predictionConfig] = useState<PredictionConfig>({
-    predictionInterval: 5,
-    analysisMode: 'session'
-  });
-
-  const { generatePrediction } = usePredictionGeneration();
-
-  const { handleCandleSaved } = usePredictorLogic({
+  const { handleCandleSaved } = usePredictionLogic({
     currentSession,
-    generatePrediction,
-    predictionConfig,
-    updateCandle
+    pair,
+    timeframe
   });
 
   return (

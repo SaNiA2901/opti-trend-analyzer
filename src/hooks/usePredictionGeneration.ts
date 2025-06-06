@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
 import { PredictionResult, PredictionConfig } from '@/types/trading';
+import { CandleData } from '@/types/session';
 
 export const usePredictionGeneration = () => {
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generatePrediction = async (candleData: any, predictionConfig: PredictionConfig) => {
+  const generatePrediction = async (candleData: CandleData, predictionConfig: PredictionConfig) => {
     if (!candleData?.open || !candleData?.high || !candleData?.low || !candleData?.close) {
       console.error('Invalid candle data for prediction:', candleData);
       return null;
@@ -15,10 +16,12 @@ export const usePredictionGeneration = () => {
     setIsGenerating(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Имитация времени обработки AI
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const { open, high, low, close, volume } = candleData;
       
+      // Расчет технических индикаторов
       const priceRange = high - low;
       const bodySize = Math.abs(close - open);
       const upperShadow = high - Math.max(open, close);
@@ -28,18 +31,20 @@ export const usePredictionGeneration = () => {
       const isHammer = bodySize < priceRange * 0.3 && lowerShadow > bodySize * 2;
       const isDoji = bodySize < priceRange * 0.1;
       
-      const volumeFactor = Math.min(100, Math.max(10, (volume / 1000) * 20));
+      // Расчет факторов
+      const volumeFactor = Math.min(95, Math.max(30, (volume / 1000) * 25));
       
       const technicalFactor = isBullish ? 
-        (isHammer ? 85 : (isDoji ? 50 : 65)) : 
-        (isHammer ? 15 : (isDoji ? 50 : 35));
+        (isHammer ? 85 : (isDoji ? 50 : 70)) : 
+        (isHammer ? 15 : (isDoji ? 50 : 30));
       
       const momentumFactor = isBullish ? 
         Math.min(90, 50 + (bodySize / priceRange) * 40) :
         Math.max(10, 50 - (bodySize / priceRange) * 40);
       
-      const volatilityFactor = Math.min(90, Math.max(10, (priceRange / open) * 1000));
+      const volatilityFactor = Math.min(90, Math.max(20, (priceRange / open) * 1500));
       
+      // Итоговый расчет
       const weightedScore = (
         technicalFactor * 0.4 +
         volumeFactor * 0.2 +
@@ -48,8 +53,8 @@ export const usePredictionGeneration = () => {
       );
 
       const direction = weightedScore > 50 ? 'UP' : 'DOWN';
-      const probability = Math.min(95, Math.max(55, weightedScore));
-      const confidence = Math.min(90, Math.max(60, probability - 5));
+      const probability = Math.min(95, Math.max(60, weightedScore));
+      const confidence = Math.min(90, Math.max(65, probability - 3));
 
       const result: PredictionResult = {
         direction,
@@ -63,8 +68,8 @@ export const usePredictionGeneration = () => {
           volatility: volatilityFactor
         },
         recommendation: direction === 'UP' ? 
-          `Рекомендуем CALL опцион на ${predictionConfig.predictionInterval} мин. ${isHammer ? 'Обнаружен паттерн "Молот"' : ''}` :
-          `Рекомендуем PUT опцион на ${predictionConfig.predictionInterval} мин. ${isHammer ? 'Обнаружен медвежий паттерн' : ''}`
+          `Рекомендуем CALL опцион на ${predictionConfig.predictionInterval} мин${isHammer ? '. Обнаружен паттерн "Молот"' : ''}` :
+          `Рекомендуем PUT опцион на ${predictionConfig.predictionInterval} мин${isHammer ? '. Обнаружен медвежий паттерн' : ''}`
       };
 
       setPredictionResult(result);
