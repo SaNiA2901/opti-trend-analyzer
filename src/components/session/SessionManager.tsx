@@ -6,9 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { Database, Plus } from 'lucide-react';
 import { TradingSession } from '@/types/session';
 import { useApplicationState } from '@/hooks/useApplicationState';
-import { useSessionManager } from './hooks/useSessionManager';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import SessionForm from './SessionForm';
 import SessionCard from './SessionCard';
+
+interface SessionCreationData {
+  session_name: string;
+  pair: string;
+  timeframe: string;
+  start_date: string;
+  start_time: string;
+}
 
 interface SessionManagerProps {
   pair: string;
@@ -16,13 +24,55 @@ interface SessionManagerProps {
 
 const SessionManager = ({ pair }: SessionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const { sessions, currentSession, isLoading } = useApplicationState();
-  
-  const { 
-    handleCreateSession, 
-    handleLoadSession, 
-    handleDeleteSession 
-  } = useSessionManager(setShowCreateForm);
+  const { sessions, currentSession, isLoading, createSession, loadSession, deleteSession } = useApplicationState();
+  const { addError } = useErrorHandler();
+
+  const handleCreateSession = async (sessionData: SessionCreationData) => {
+    try {
+      console.log('SessionManager: Creating session:', sessionData.session_name);
+      const session = await createSession(sessionData);
+      if (session) {
+        setShowCreateForm(false);
+        console.log('SessionManager: Session created and form closed');
+      }
+    } catch (error) {
+      console.error('SessionManager: Failed to create session:', error);
+      addError(
+        'Ошибка создания сессии', 
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+  };
+
+  const handleLoadSession = async (sessionId: string) => {
+    try {
+      console.log('SessionManager: Loading session:', sessionId);
+      const session = await loadSession(sessionId);
+      if (session) {
+        console.log('SessionManager: Session loaded successfully');
+      }
+    } catch (error) {
+      console.error('SessionManager: Failed to load session:', error);
+      addError(
+        'Ошибка загрузки сессии', 
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      console.log('SessionManager: Deleting session:', sessionId);
+      await deleteSession(sessionId);
+      console.log('SessionManager: Session deleted successfully');
+    } catch (error) {
+      console.error('SessionManager: Failed to delete session:', error);
+      addError(
+        'Ошибка удаления сессии', 
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+  };
 
   const filteredSessions = sessions.filter(s => s.pair === pair);
 

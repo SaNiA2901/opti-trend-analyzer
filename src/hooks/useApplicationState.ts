@@ -1,6 +1,6 @@
 
-import { useSessionManager } from './session/useSessionManager';
 import { useCandleOperations } from './candle/useCandleOperations';
+import { useSessionManager } from './session/useSessionManager';
 
 export const useApplicationState = () => {
   const {
