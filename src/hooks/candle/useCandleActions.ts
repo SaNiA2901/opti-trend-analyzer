@@ -3,6 +3,14 @@ import { useState, useCallback } from 'react';
 import { TradingSession, CandleData } from '@/types/session';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
+interface CandleFormData {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 interface UseCandleActionsProps {
   currentSession: TradingSession | null;
   nextCandleIndex: number;
@@ -19,7 +27,7 @@ export const useCandleActions = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addError } = useErrorHandler();
 
-  const handleSave = useCallback(async (formData: any, resetForm: () => void) => {
+  const handleSave = useCallback(async (formData: CandleFormData, resetForm: () => void) => {
     if (!currentSession) {
       addError('Нет активной сессии для сохранения данных');
       return;

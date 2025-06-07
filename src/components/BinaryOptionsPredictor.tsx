@@ -6,6 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import SessionManager from './session/SessionManager';
 import CandleInput from './session/CandleInput';
 import PatternDetection from './patterns/PatternDetection';
+import PredictionDisplay from './predictor/PredictionDisplay';
 import { useApplicationState } from '@/hooks/useApplicationState';
 import { usePredictionLogic } from '@/hooks/usePredictionLogic';
 
@@ -50,6 +51,9 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
             <TabsTrigger value="input" className="data-[state=active]:bg-blue-600">
               Ввод данных
             </TabsTrigger>
+            <TabsTrigger value="predictions" className="data-[state=active]:bg-blue-600">
+              Прогнозы
+            </TabsTrigger>
             <TabsTrigger value="patterns" className="data-[state=active]:bg-blue-600">
               Паттерны
             </TabsTrigger>
@@ -74,6 +78,10 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
                 </p>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="predictions">
+            <PredictionDisplay candles={candles} currentSession={currentSession} />
           </TabsContent>
 
           <TabsContent value="patterns">
