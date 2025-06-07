@@ -31,7 +31,7 @@ export const usePredictionLogic = ({
 
       const prediction = await generatePrediction(candleData, predictionConfig);
       
-      if (prediction && candleData.id) {
+      if (prediction && typeof candleData.candle_index === 'number') {
         const updatedCandle: CandleData = {
           ...candleData,
           prediction_direction: prediction.direction,
@@ -39,7 +39,7 @@ export const usePredictionLogic = ({
           prediction_confidence: prediction.confidence
         };
 
-        await updateCandle(candleData.id, updatedCandle);
+        await updateCandle(candleData.candle_index, updatedCandle);
         console.log('PredictionLogic: Prediction saved to candle');
       }
     } catch (error) {
