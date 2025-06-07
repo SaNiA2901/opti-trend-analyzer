@@ -65,6 +65,7 @@ export const useSessionManager = () => {
     deleteSession: handleDeleteSession,
     refreshSessions,
     resetSessionState,
-    updateCandles
+    updateCandles,
+    setCurrentSession // Экспортируем функцию для использования в других хуках
   };
 };

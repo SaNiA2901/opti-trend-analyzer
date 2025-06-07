@@ -14,14 +14,14 @@ export const useApplicationState = () => {
     loadSession,
     deleteSession,
     resetSessionState,
-    updateCandles
+    updateCandles,
+    setCurrentSession
   } = useSessionManager();
 
   const { saveCandle, deleteCandle, updateCandle } = useCandleOperations(
     currentSession,
     updateCandles,
-    // Функция для обновления текущей сессии (будет реализована в следующем этапе)
-    () => {}
+    setCurrentSession // Передаем реальную функцию вместо пустой
   );
 
   const deleteLastCandle = async () => {
