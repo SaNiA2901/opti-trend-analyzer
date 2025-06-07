@@ -33,7 +33,15 @@ const CandleInputHeader = ({
           <div className="flex items-center space-x-2 text-blue-200">
             <Calendar className="h-4 w-4" />
             <span>Время свечи:</span>
-            <span className="font-mono">{new Date(nextCandleTime).toLocaleString()}</span>
+            <span className="font-mono">
+              {new Date(nextCandleTime).toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
           </div>
         </div>
       )}

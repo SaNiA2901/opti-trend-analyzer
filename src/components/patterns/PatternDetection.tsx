@@ -1,142 +1,149 @@
 
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react";
-import { usePatternDetection, PatternResult } from "@/hooks/usePatternDetection";
-import { CandleData } from "@/types/session";
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { CandleData } from '@/types/session';
 
 interface PatternDetectionProps {
   candles: CandleData[];
 }
 
 const PatternDetection = ({ candles }: PatternDetectionProps) => {
-  const { detectedPatterns, hasPatterns } = usePatternDetection(candles);
+  const detectPatterns = (candleData: CandleData[]) => {
+    if (candleData.length < 3) return [];
 
-  const getPatternIcon = (type: PatternResult['type']) => {
-    switch (type) {
-      case 'BULLISH':
-        return <TrendingUp className="h-4 w-4" />;
-      case 'BEARISH':
-        return <TrendingDown className="h-4 w-4" />;
-      default:
-        return <Activity className="h-4 w-4" />;
-    }
+    const patterns = [];
+    const lastCandles = candleData.slice(-3);
+
+    // Простые паттерны для демонстрации
+    lastCandles.forEach((candle, index) => {
+      const bodySize = Math.abs(candle.close - candle.open);
+      const priceRange = candle.high - candle.low;
+      const upperShadow = candle.high - Math.max(candle.open, candle.close);
+      const lowerShadow = Math.min(candle.open, candle.close) - candle.low;
+
+      // Дожи
+      if (bodySize < priceRange * 0.1) {
+        patterns.push({
+          name: 'Дожи',
+          type: 'neutral',
+          candle: candle.candle_index,
+          strength: 'medium'
+        });
+      }
+
+      // Молот
+      if (bodySize < priceRange * 0.3 && lowerShadow > bodySize * 2) {
+        patterns.push({
+          name: 'Молот',
+          type: candle.close > candle.open ? 'bullish' : 'bearish',
+          candle: candle.candle_index,
+          strength: 'high'
+        });
+      }
+
+      // Падающая звезда
+      if (bodySize < priceRange * 0.3 && upperShadow > bodySize * 2) {
+        patterns.push({
+          name: 'Падающая звезда',
+          type: 'bearish',
+          candle: candle.candle_index,
+          strength: 'high'
+        });
+      }
+    });
+
+    return patterns;
   };
 
-  const getPatternColor = (type: PatternResult['type']) => {
-    switch (type) {
-      case 'BULLISH':
-        return 'bg-green-600';
-      case 'BEARISH':
-        return 'bg-red-600';
-      default:
-        return 'bg-blue-600';
-    }
-  };
+  const patterns = detectPatterns(candles);
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 85) return 'text-green-400';
-    if (confidence >= 70) return 'text-yellow-400';
-    return 'text-orange-400';
-  };
-
-  if (!hasPatterns && candles.length < 5) {
+  if (candles.length === 0) {
     return (
-      <Card className="p-6 bg-slate-800/50 border-slate-700">
-        <div className="flex items-center space-x-3 mb-4">
-          <AlertTriangle className="h-6 w-6 text-yellow-400" />
-          <h3 className="text-lg font-semibold text-white">Обнаружение паттернов</h3>
-        </div>
-        
-        <div className="text-center py-8 text-slate-400">
-          <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Недостаточно данных для анализа</p>
-          <p className="text-sm">Требуется минимум 5 свечей</p>
-        </div>
+      <Card className="p-8 bg-slate-700/30 border-slate-600 text-center">
+        <Activity className="h-12 w-12 mx-auto mb-4 text-slate-500" />
+        <p className="text-slate-400">
+          Нет данных для анализа паттернов
+        </p>
+        <p className="text-sm text-slate-500 mt-2">
+          Добавьте свечи для обнаружения торговых паттернов
+        </p>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 bg-slate-800/50 border-slate-700">
-      <div className="flex items-center space-x-3 mb-4">
-        <Activity className="h-6 w-6 text-blue-400" />
-        <h3 className="text-lg font-semibold text-white">Обнаружение паттернов</h3>
-        <Badge className="bg-blue-600 text-white">
-          {candles.length} свечей
-        </Badge>
-      </div>
-
-      {!hasPatterns ? (
-        <div className="text-center py-8 text-slate-400">
-          <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Паттерны не обнаружены</p>
-          <p className="text-sm">Добавьте больше свечей для анализа</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {detectedPatterns.map((pattern, index) => (
-            <Card 
-              key={index}
-              className="p-4 bg-slate-700/50 border-slate-600 hover:bg-slate-700/70 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-3">
+    <div className="space-y-4">
+      <Card className="p-6 bg-slate-800/50 border-slate-700">
+        <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+          <Activity className="h-5 w-5 mr-2" />
+          Обнаружение паттернов
+        </h3>
+        
+        {patterns.length > 0 ? (
+          <div className="space-y-3">
+            {patterns.map((pattern, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <Badge className={`${getPatternColor(pattern.type)} text-white`}>
-                    {getPatternIcon(pattern.type)}
-                    <span className="ml-2">{pattern.name}</span>
-                  </Badge>
+                  {pattern.type === 'bullish' && <TrendingUp className="h-4 w-4 text-green-400" />}
+                  {pattern.type === 'bearish' && <TrendingDown className="h-4 w-4 text-red-400" />}
+                  {pattern.type === 'neutral' && <Activity className="h-4 w-4 text-yellow-400" />}
                   
-                  <Badge variant="outline" className="text-slate-300 border-slate-500">
-                    {pattern.candleRange} свечей
-                  </Badge>
-                </div>
-
-                <div className="text-right">
-                  <div className={`font-semibold ${getConfidenceColor(pattern.confidence)}`}>
-                    {pattern.confidence.toFixed(0)}%
+                  <div>
+                    <span className="text-white font-medium">{pattern.name}</span>
+                    <p className="text-sm text-slate-400">Свеча #{pattern.candle + 1}</p>
                   </div>
-                  <div className="text-xs text-slate-400">уверенность</div>
                 </div>
+                
+                <Badge className={
+                  pattern.type === 'bullish' ? 'bg-green-600' :
+                  pattern.type === 'bearish' ? 'bg-red-600' : 'bg-yellow-600'
+                }>
+                  {pattern.strength === 'high' ? 'Сильный' : 'Средний'}
+                </Badge>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-slate-400">Паттерны не обнаружены</p>
+            <p className="text-sm text-slate-500 mt-1">
+              Добавьте больше свечей для анализа
+            </p>
+          </div>
+        )}
+      </Card>
 
-              <p className="text-slate-300 text-sm mb-2">
-                {pattern.description}
-              </p>
-
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Мин. свечей: {pattern.requiredCandles}</span>
-                <span>
-                  {pattern.type === 'BULLISH' ? 'Бычий сигнал' : 
-                   pattern.type === 'BEARISH' ? 'Медвежий сигнал' : 
-                   'Нейтральный сигнал'}
-                </span>
-              </div>
-            </Card>
-          ))}
-
-          <div className="mt-6 p-4 bg-slate-700/30 rounded-lg border border-slate-600">
-            <h4 className="text-white font-medium mb-2 flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-400" />
-              <span>Рекомендации</span>
-            </h4>
-            
-            <div className="text-sm text-slate-300 space-y-1">
-              {detectedPatterns.some(p => p.type === 'BULLISH') && (
-                <p className="text-green-400">• Обнаружены бычьи паттерны - рассмотрите CALL опционы</p>
-              )}
-              {detectedPatterns.some(p => p.type === 'BEARISH') && (
-                <p className="text-red-400">• Обнаружены медвежьи паттерны - рассмотрите PUT опционы</p>
-              )}
-              {detectedPatterns.some(p => p.confidence >= 80) && (
-                <p className="text-yellow-400">• Высокая уверенность в некоторых паттернах</p>
-              )}
-              <p className="text-slate-400">• Используйте паттерны в сочетании с другими индикаторами</p>
+      <Card className="p-6 bg-slate-800/50 border-slate-700">
+        <h4 className="text-lg font-medium text-white mb-4">Статистика анализа</h4>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-white">{candles.length}</div>
+            <div className="text-sm text-slate-400">Проанализировано свечей</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-400">{patterns.length}</div>
+            <div className="text-sm text-slate-400">Найдено паттернов</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-400">
+              {patterns.filter(p => p.type === 'bullish').length}
             </div>
+            <div className="text-sm text-slate-400">Бычьих сигналов</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-400">
+              {patterns.filter(p => p.type === 'bearish').length}
+            </div>
+            <div className="text-sm text-slate-400">Медвежьих сигналов</div>
           </div>
         </div>
-      )}
-    </Card>
+      </Card>
+    </div>
   );
 };
 

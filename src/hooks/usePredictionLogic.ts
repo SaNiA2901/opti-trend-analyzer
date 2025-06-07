@@ -19,7 +19,7 @@ export const usePredictionLogic = ({
   const { generatePrediction } = usePredictionGeneration();
 
   const handleCandleSaved = useCallback(async (candleData: CandleData) => {
-    if (!currentSession) return;
+    if (!currentSession || typeof candleData.candle_index !== 'number') return;
 
     try {
       console.log('PredictionLogic: Generating prediction for candle:', candleData.candle_index);
@@ -31,7 +31,7 @@ export const usePredictionLogic = ({
 
       const prediction = await generatePrediction(candleData, predictionConfig);
       
-      if (prediction && typeof candleData.candle_index === 'number') {
+      if (prediction) {
         const updatedCandle: CandleData = {
           ...candleData,
           prediction_direction: prediction.direction,
