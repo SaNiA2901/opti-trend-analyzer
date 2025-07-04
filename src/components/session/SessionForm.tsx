@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { validateSessionData } from '@/utils/candleValidation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface SessionFormProps {
   onSubmit: (sessionData: {
@@ -24,6 +27,7 @@ const SessionForm = ({ onSubmit, onCancel, isLoading, pair }: SessionFormProps) 
   const [timeframe, setTimeframe] = useState('1h');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState(new Date().toTimeString().slice(0, 5));
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const timeframes = [
     { value: '1m', label: '1 минута' },
@@ -36,20 +40,41 @@ const SessionForm = ({ onSubmit, onCancel, isLoading, pair }: SessionFormProps) 
   ];
 
   const handleSubmit = async () => {
-    if (!sessionName.trim()) return;
-
-    await onSubmit({
+    const sessionData = {
       session_name: sessionName,
       pair,
       timeframe,
       start_date: startDate,
       start_time: startTime
-    });
+    };
+
+    // Валидация перед отправкой
+    const validation = validateSessionData(sessionData);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      return;
+    }
+
+    setValidationErrors([]);
+    await onSubmit(sessionData);
   };
 
   return (
     <Card className="p-4 mb-4 bg-slate-700/50 border-slate-600">
       <h4 className="text-white font-medium mb-4">Создать новую сессию</h4>
+      
+      {validationErrors.length > 0 && (
+        <Alert className="mb-4 bg-red-900/50 border-red-700">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <ul className="list-disc list-inside">
+              {validationErrors.map((error, index) => (
+                <li key={index} className="text-red-200">{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
