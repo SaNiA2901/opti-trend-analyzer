@@ -27,51 +27,48 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
   const { sessions, currentSession, isLoading, createSession, loadSession, deleteSession } = useApplicationState();
   const { addError } = useErrorHandler();
 
-  const handleCreateSession = async (sessionData: SessionCreationData) => {
+  const handleSessionOperation = async <T,>(
+    operation: () => Promise<T>,
+    operationName: string,
+    errorMessage: string,
+    onSuccess?: (result: T) => void
+  ): Promise<T | null> => {
     try {
-      console.log('SessionManager: Creating session:', sessionData.session_name);
-      const session = await createSession(sessionData);
-      if (session) {
-        setShowCreateForm(false);
-        console.log('SessionManager: Session created and form closed');
-      }
+      console.log(`SessionManager: ${operationName} started`);
+      const result = await operation();
+      console.log(`SessionManager: ${operationName} completed successfully`);
+      onSuccess?.(result);
+      return result;
     } catch (error) {
-      console.error('SessionManager: Failed to create session:', error);
-      addError(
-        'Ошибка создания сессии', 
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      console.error(`SessionManager: ${operationName} failed:`, error);
+      addError(errorMessage, error instanceof Error ? error.message : 'Unknown error');
+      return null;
     }
+  };
+
+  const handleCreateSession = async (sessionData: SessionCreationData) => {
+    await handleSessionOperation(
+      () => createSession(sessionData),
+      'Creating session',
+      'Ошибка создания сессии',
+      () => setShowCreateForm(false)
+    );
   };
 
   const handleLoadSession = async (sessionId: string) => {
-    try {
-      console.log('SessionManager: Loading session:', sessionId);
-      const session = await loadSession(sessionId);
-      if (session) {
-        console.log('SessionManager: Session loaded successfully');
-      }
-    } catch (error) {
-      console.error('SessionManager: Failed to load session:', error);
-      addError(
-        'Ошибка загрузки сессии', 
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-    }
+    await handleSessionOperation(
+      () => loadSession(sessionId),
+      `Loading session ${sessionId}`,
+      'Ошибка загрузки сессии'
+    );
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    try {
-      console.log('SessionManager: Deleting session:', sessionId);
-      await deleteSession(sessionId);
-      console.log('SessionManager: Session deleted successfully');
-    } catch (error) {
-      console.error('SessionManager: Failed to delete session:', error);
-      addError(
-        'Ошибка удаления сессии', 
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-    }
+    await handleSessionOperation(
+      () => deleteSession(sessionId),
+      `Deleting session ${sessionId}`,
+      'Ошибка удаления сессии'
+    );
   };
 
   const filteredSessions = sessions.filter(s => s.pair === pair);
