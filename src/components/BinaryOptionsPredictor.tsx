@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp } from 'lucide-react';
@@ -15,7 +15,7 @@ interface BinaryOptionsPredictorProps {
   timeframe: string;
 }
 
-const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps) => {
+const BinaryOptionsPredictor = memo(({ pair, timeframe }: BinaryOptionsPredictorProps) => {
   const {
     currentSession,
     candles,
@@ -91,6 +91,8 @@ const BinaryOptionsPredictor = ({ pair, timeframe }: BinaryOptionsPredictorProps
       </Card>
     </div>
   );
-};
+});
+
+BinaryOptionsPredictor.displayName = 'BinaryOptionsPredictor';
 
 export default BinaryOptionsPredictor;

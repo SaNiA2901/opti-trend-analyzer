@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { TradingSession, CandleData } from '@/types/session';
 import { useCandleForm } from './useCandleForm';
 import { useCandleActions } from './useCandleActions';
@@ -47,25 +47,26 @@ export const useCandleInputLogic = ({
     );
   }, [candles]);
 
+  // Мемоизируем обработчики для предотвращения повторных рендеров
+  const handleSave = useCallback(async () => {
+    if (!validateForm()) return;
+    
+    const numericData = getNumericData();
+    await saveAction(numericData, resetForm);
+  }, [validateForm, getNumericData, saveAction, resetForm]);
+
+  const handleDeleteLast = useCallback(async () => {
+    if (lastCandle && window.confirm('Удалить последнюю свечу?')) {
+      await deleteAction(resetForm);
+    }
+  }, [lastCandle, deleteAction, resetForm]);
+
   // Автозаполнение цены открытия
   useEffect(() => {
     if (lastCandle && !formData.open && !isSubmitting) {
       updateField('open', lastCandle.close.toString());
     }
   }, [lastCandle?.close, formData.open, updateField, isSubmitting]);
-
-  const handleSave = async () => {
-    if (!validateForm()) return;
-    
-    const numericData = getNumericData();
-    await saveAction(numericData, resetForm);
-  };
-
-  const handleDeleteLast = async () => {
-    if (lastCandle && window.confirm('Удалить последнюю свечу?')) {
-      await deleteAction(resetForm);
-    }
-  };
 
   return {
     formData,

@@ -27,32 +27,38 @@ const DEFAULT_CONFIG: PatternDetectionConfig = {
   minConfidence: 60
 };
 
+// Мемоизируем массив детекторов для предотвращения пересоздания
+const PATTERN_DETECTORS = [
+  { fn: detectDoji, name: 'detectDoji' },
+  { fn: detectHammer, name: 'detectHammer' },
+  { fn: detectEngulfing, name: 'detectEngulfing' },
+  { fn: detectThreeWhiteSoldiers, name: 'detectThreeWhiteSoldiers' },
+  { fn: detectThreeBlackCrows, name: 'detectThreeBlackCrows' },
+  { fn: detectMorningStar, name: 'detectMorningStar' },
+  { fn: detectEveningStar, name: 'detectEveningStar' },
+  { fn: detectDoubleTop, name: 'detectDoubleTop' },
+  { fn: detectHeadAndShoulders, name: 'detectHeadAndShoulders' },
+  { fn: detectFlagPattern, name: 'detectFlagPattern' }
+];
+
 export const usePatternDetection = (
   candles: CandleData[], 
   config: Partial<PatternDetectionConfig> = {}
 ) => {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
 
   const detectedPatterns = useMemo(() => {
     if (candles.length < 5) return [];
     
     const patterns: PatternResult[] = [];
-    const detectors = [
-      { fn: detectDoji, name: 'detectDoji' },
-      { fn: detectHammer, name: 'detectHammer' },
-      { fn: detectEngulfing, name: 'detectEngulfing' },
-      { fn: detectThreeWhiteSoldiers, name: 'detectThreeWhiteSoldiers' },
-      { fn: detectThreeBlackCrows, name: 'detectThreeBlackCrows' },
-      { fn: detectMorningStar, name: 'detectMorningStar' },
-      { fn: detectEveningStar, name: 'detectEveningStar' },
-      { fn: detectDoubleTop, name: 'detectDoubleTop' },
-      { fn: detectHeadAndShoulders, name: 'detectHeadAndShoulders' },
-      { fn: detectFlagPattern, name: 'detectFlagPattern' }
-    ];
+    
+    // Оптимизация: обрабатываем только последние N свечей для лучшей производительности
+    const maxCandlesToAnalyze = Math.min(candles.length, 100);
+    const startIndex = Math.max(0, candles.length - maxCandlesToAnalyze);
     
     // Проходим по свечам и ищем паттерны
-    for (let i = 0; i < candles.length; i++) {
-      for (const detector of detectors) {
+    for (let i = startIndex; i < candles.length; i++) {
+      for (const detector of PATTERN_DETECTORS) {
         const pattern = executeDetectorSafely(detector.fn, candles, i, detector.name);
         
         if (pattern && !isDuplicatePattern(patterns, pattern, i)) {
