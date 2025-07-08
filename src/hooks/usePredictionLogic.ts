@@ -22,14 +22,19 @@ export const usePredictionLogic = ({
     if (!currentSession || typeof candleData.candle_index !== 'number') return;
 
     try {
-      console.log('PredictionLogic: Generating prediction for candle:', candleData.candle_index);
+      console.log('PredictionLogic: Generating advanced prediction for candle:', candleData.candle_index);
       
       const predictionConfig = {
         predictionInterval: 5,
         analysisMode: 'session' as const
       };
 
-      const prediction = await generatePrediction(candleData, predictionConfig);
+      // Получаем исторические данные из состояния приложения
+      const { candles } = useApplicationState();
+      const allCandles = [...candles, candleData].sort((a, b) => a.candle_index - b.candle_index);
+
+      // Используем продвинутую модель с историческими данными
+      const prediction = await generatePrediction(candleData, predictionConfig, allCandles);
       
       if (prediction) {
         const updatedCandle: CandleData = {
@@ -40,7 +45,7 @@ export const usePredictionLogic = ({
         };
 
         await updateCandle(candleData.candle_index, updatedCandle);
-        console.log('PredictionLogic: Prediction saved to candle');
+        console.log('PredictionLogic: Advanced prediction saved to candle');
       }
     } catch (error) {
       console.error('PredictionLogic: Error generating prediction:', error);
