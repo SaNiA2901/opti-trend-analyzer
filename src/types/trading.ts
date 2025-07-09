@@ -24,6 +24,41 @@ export interface PredictionResult {
     volume: number;
     momentum: number;
     volatility: number;
+    pattern: number;
+    trend: number;
   };
   recommendation: string;
+}
+
+export interface ModelStatistics {
+  totalPredictions: number;
+  accurateCount: number;
+  overallAccuracy: number;
+  callAccuracy: number;
+  putAccuracy: number;
+  currentWeights: {
+    technical: number;
+    volume: number;
+    momentum: number;
+    volatility: number;
+    pattern: number;
+    trend: number;
+  };
+}
+
+export interface TechnicalIndicators {
+  rsi: number;
+  macd: { line: number; signal: number; histogram: number };
+  bollingerBands: { upper: number; middle: number; lower: number };
+  ema: { ema12: number; ema26: number };
+  stochastic: { k: number; d: number };
+  atr: number;
+  adx: number;
+}
+
+export interface PatternSignal {
+  name: string;
+  strength: number;
+  isReversal: boolean;
+  isContinuation: boolean;
 }

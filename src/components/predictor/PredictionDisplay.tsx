@@ -1,8 +1,11 @@
 
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { TrendingUp, TrendingDown, BarChart3, Brain, Activity, TrendingUpDown } from 'lucide-react';
 import { CandleData, TradingSession } from '@/types/session';
+import { usePredictionGeneration } from '@/hooks/usePredictionGeneration';
 
 interface PredictionDisplayProps {
   candles: CandleData[];
@@ -10,9 +13,18 @@ interface PredictionDisplayProps {
 }
 
 const PredictionDisplay = ({ candles, currentSession }: PredictionDisplayProps) => {
+  const { getModelStats } = usePredictionGeneration();
+  const [modelStats, setModelStats] = useState<any>(null);
+
   const candlesWithPredictions = candles.filter(candle => 
     candle.prediction_direction && candle.prediction_probability
   );
+
+  useEffect(() => {
+    if (candlesWithPredictions.length > 0) {
+      setModelStats(getModelStats());
+    }
+  }, [candlesWithPredictions.length, getModelStats]);
 
   if (!currentSession) {
     return (
@@ -109,39 +121,104 @@ const PredictionDisplay = ({ candles, currentSession }: PredictionDisplayProps) 
       </Card>
 
       {candlesWithPredictions.length > 0 && (
-        <Card className="p-6 bg-slate-800/50 border-slate-700">
-          <h4 className="text-lg font-medium text-white mb-4">Статистика прогнозов</h4>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">
-                {candlesWithPredictions.length}
+        <>
+          <Card className="p-6 bg-slate-800/50 border-slate-700">
+            <h4 className="text-lg font-medium text-white mb-4">Статистика прогнозов</h4>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">
+                  {candlesWithPredictions.length}
+                </div>
+                <div className="text-sm text-slate-400">Всего прогнозов</div>
               </div>
-              <div className="text-sm text-slate-400">Всего прогнозов</div>
-            </div>
 
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">
-                {candlesWithPredictions.filter(c => c.prediction_direction === 'UP').length}
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">
+                  {candlesWithPredictions.filter(c => c.prediction_direction === 'UP').length}
+                </div>
+                <div className="text-sm text-slate-400">CALL сигналов</div>
               </div>
-              <div className="text-sm text-slate-400">CALL сигналов</div>
-            </div>
 
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-400">
-                {candlesWithPredictions.filter(c => c.prediction_direction === 'DOWN').length}
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">
+                  {candlesWithPredictions.filter(c => c.prediction_direction === 'DOWN').length}
+                </div>
+                <div className="text-sm text-slate-400">PUT сигналов</div>
               </div>
-              <div className="text-sm text-slate-400">PUT сигналов</div>
-            </div>
 
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">
-                {(candlesWithPredictions.reduce((sum, c) => sum + (c.prediction_probability || 0), 0) / candlesWithPredictions.length).toFixed(1)}%
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-400">
+                  {(candlesWithPredictions.reduce((sum, c) => sum + (c.prediction_probability || 0), 0) / candlesWithPredictions.length).toFixed(1)}%
+                </div>
+                <div className="text-sm text-slate-400">Средняя вероятность</div>
               </div>
-              <div className="text-sm text-slate-400">Средняя вероятность</div>
             </div>
-          </div>
-        </Card>
+          </Card>
+
+          {modelStats && (
+            <Card className="p-6 bg-slate-800/50 border-slate-700">
+              <div className="flex items-center space-x-3 mb-4">
+                <Brain className="h-5 w-5 text-purple-400" />
+                <h4 className="text-lg font-medium text-white">Статистика модели ML</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Общая точность */}
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white mb-2">
+                      {modelStats.overallAccuracy.toFixed(1)}%
+                    </div>
+                    <Progress value={modelStats.overallAccuracy} className="mb-2 h-2" />
+                    <p className="text-sm text-slate-400">Общая точность</p>
+                  </div>
+                </div>
+
+                {/* CALL точность */}
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-400 mb-2">
+                      {modelStats.callAccuracy.toFixed(1)}%
+                    </div>
+                    <Progress value={modelStats.callAccuracy} className="mb-2 h-2" />
+                    <p className="text-sm text-slate-400">Точность CALL</p>
+                  </div>
+                </div>
+
+                {/* PUT точность */}
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-red-400 mb-2">
+                      {modelStats.putAccuracy.toFixed(1)}%
+                    </div>
+                    <Progress value={modelStats.putAccuracy} className="mb-2 h-2" />
+                    <p className="text-sm text-slate-400">Точность PUT</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Веса модели */}
+              <div className="mt-6">
+                <h5 className="text-white font-medium mb-3 flex items-center space-x-2">
+                  <Activity className="h-4 w-4 text-blue-400" />
+                  <span>Адаптивные веса факторов</span>
+                </h5>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {Object.entries(modelStats.currentWeights).map(([factor, weight]) => (
+                    <div key={factor} className="bg-slate-700/50 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-slate-300 capitalize">{factor}</span>
+                        <span className="text-xs text-white">{((weight as number) * 100).toFixed(1)}%</span>
+                      </div>
+                      <Progress value={(weight as number) * 100} className="h-1" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

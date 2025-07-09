@@ -122,7 +122,9 @@ export const usePredictionGeneration = () => {
         technical: technicalFactor,
         volume: volumeFactor,
         momentum: momentumFactor,
-        volatility: volatilityFactor
+        volatility: volatilityFactor,
+        pattern: isHammer ? 75 : (isDoji ? 60 : 50),
+        trend: isBullish ? 65 : 35
       },
       recommendation: direction === 'UP' ? 
         `Рекомендуем CALL опцион на ${predictionConfig.predictionInterval} мин${isHammer ? '. Обнаружен паттерн "Молот"' : ''}` :

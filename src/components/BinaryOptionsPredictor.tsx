@@ -7,8 +7,10 @@ import SessionManager from './session/SessionManager';
 import CandleInput from './session/CandleInput';
 import PatternDetection from './patterns/PatternDetection';
 import PredictionDisplay from './predictor/PredictionDisplay';
+import WeightedPriceForecast from './predictor/WeightedPriceForecast';
 import { useApplicationState } from '@/hooks/useApplicationState';
 import { usePredictionLogic } from '@/hooks/usePredictionLogic';
+import { usePredictionGeneration } from '@/hooks/usePredictionGeneration';
 
 interface BinaryOptionsPredictorProps {
   pair: string;
@@ -27,6 +29,8 @@ const BinaryOptionsPredictor = memo(({ pair, timeframe }: BinaryOptionsPredictor
     pair,
     timeframe
   });
+
+  const { predictionResult } = usePredictionGeneration();
 
   return (
     <div className="space-y-6">
@@ -81,7 +85,16 @@ const BinaryOptionsPredictor = memo(({ pair, timeframe }: BinaryOptionsPredictor
           </TabsContent>
 
           <TabsContent value="predictions">
-            <PredictionDisplay candles={candles} currentSession={currentSession} />
+            <div className="space-y-6">
+              <PredictionDisplay candles={candles} currentSession={currentSession} />
+              {predictionResult && (
+                <WeightedPriceForecast 
+                  result={predictionResult} 
+                  pair={pair} 
+                  timeframe={timeframe} 
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="patterns">

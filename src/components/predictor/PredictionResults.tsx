@@ -94,44 +94,64 @@ const PredictionResults = ({ result, pair }: PredictionResultsProps) => {
           <h3 className="text-lg font-semibold text-white">Анализ факторов влияния</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-3">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-slate-400">Технический анализ (40%)</span>
+                <span className="text-slate-400">Технический анализ</span>
                 <span className="text-white">{result.factors.technical.toFixed(1)}/100</span>
               </div>
               <Progress value={result.factors.technical} className="h-2" />
-              <p className="text-xs text-slate-400 mt-1">RSI, MACD, скользящие средние</p>
+              <p className="text-xs text-slate-400 mt-1">RSI, MACD, Bollinger Bands</p>
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-slate-400">Моментум (25%)</span>
+                <span className="text-slate-400">Моментум</span>
                 <span className="text-white">{result.factors.momentum.toFixed(1)}/100</span>
               </div>
               <Progress value={result.factors.momentum} className="h-2" />
-              <p className="text-xs text-slate-400 mt-1">Скорость изменения цены</p>
+              <p className="text-xs text-slate-400 mt-1">EMA, Stochastic</p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-slate-400">Объем торгов (20%)</span>
+                <span className="text-slate-400">Объем торгов</span>
                 <span className="text-white">{result.factors.volume.toFixed(1)}/100</span>
               </div>
               <Progress value={result.factors.volume} className="h-2" />
-              <p className="text-xs text-slate-400 mt-1">Активность на рынке</p>
+              <p className="text-xs text-slate-400 mt-1">Анализ активности</p>
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-slate-400">Волатильность (15%)</span>
+                <span className="text-slate-400">Волатильность</span>
                 <span className="text-white">{result.factors.volatility.toFixed(1)}/100</span>
               </div>
               <Progress value={result.factors.volatility} className="h-2" />
-              <p className="text-xs text-slate-400 mt-1">Изменчивость цены</p>
+              <p className="text-xs text-slate-400 mt-1">ATR, изменчивость</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-slate-400">Паттерны</span>
+                <span className="text-white">{result.factors.pattern?.toFixed(1) || '50.0'}/100</span>
+              </div>
+              <Progress value={result.factors.pattern || 50} className="h-2" />
+              <p className="text-xs text-slate-400 mt-1">Свечные паттерны</p>
+            </div>
+
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-slate-400">Тренд</span>
+                <span className="text-white">{result.factors.trend?.toFixed(1) || '50.0'}/100</span>
+              </div>
+              <Progress value={result.factors.trend || 50} className="h-2" />
+              <p className="text-xs text-slate-400 mt-1">ADX, направление</p>
             </div>
           </div>
         </div>
