@@ -1,131 +1,163 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-
-export interface ErrorState {
+interface ErrorState {
   message: string;
-  code?: string;
-  timestamp: Date;
-  source?: string;
+  type: 'error' | 'warning' | 'info';
+  timestamp: number;
+  context?: any;
 }
 
-export interface ErrorHandlerOptions {
+interface UseErrorHandlerOptions {
+  enableRetry?: boolean;
+  maxRetries?: number;
+  retryDelay?: number;
+  logErrors?: boolean;
   showToast?: boolean;
-  logToConsole?: boolean;
-  source?: string;
 }
 
-interface ErrorHandlerReturn {
-  errors: ErrorState[];
-  addError: (message: string, code?: string, options?: ErrorHandlerOptions) => void;
-  clearError: (index: number) => void;
-  clearAllErrors: () => void;
-  clearErrorsBySource: (source: string) => void;
-  handleAsyncError: <T>(operation: () => Promise<T>, errorMessage?: string, options?: ErrorHandlerOptions) => Promise<T | null>;
-  withErrorBoundary: <T extends any[], R>(fn: (...args: T) => R, errorMessage?: string, options?: ErrorHandlerOptions) => (...args: T) => R | null;
-  handleSyncError: (error: unknown, fallbackMessage?: string, options?: ErrorHandlerOptions) => void;
-  getRecentErrors: (minutes?: number) => ErrorState[];
-}
+export const useErrorHandler = (options: UseErrorHandlerOptions = {}) => {
+  const {
+    enableRetry = true,
+    maxRetries = 3,
+    retryDelay = 1000,
+    logErrors = true,
+    showToast = true
+  } = options;
 
-export const useErrorHandler = (): ErrorHandlerReturn => {
   const [errors, setErrors] = useState<ErrorState[]>([]);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const retryCountRef = useRef(new Map<string, number>());
 
-  const addError = useCallback((
-    message: string, 
-    code?: string, 
-    options: ErrorHandlerOptions = {}
+  // Обработка ошибок
+  const handleError = useCallback((
+    error: Error | string,
+    context?: any,
+    errorType: 'error' | 'warning' | 'info' = 'error'
   ) => {
-    const { showToast = true, logToConsole = true, source } = options;
-    
-    const error: ErrorState = {
+    const message = typeof error === 'string' ? error : error.message;
+    const errorState: ErrorState = {
       message,
-      code,
-      timestamp: new Date(),
-      source
+      type: errorType,
+      timestamp: Date.now(),
+      context
     };
-    
-    setErrors(prev => [...prev, error]);
-    
+
+    setErrors(prev => [...prev.slice(-9), errorState]); // Храним последние 10 ошибок
+
+    if (logErrors) {
+      console.error(`[${errorType.toUpperCase()}]`, message, context);
+    }
+
     if (showToast) {
-      toast.error(message);
+      toast({
+        title: errorType === 'error' ? 'Ошибка' : errorType === 'warning' ? 'Предупреждение' : 'Информация',
+        description: message,
+        variant: errorType === 'error' ? 'destructive' : 'default'
+      });
     }
-    
-    if (logToConsole) {
-      console.error('Application Error:', error);
-    }
-  }, []);
 
-  const clearError = useCallback((index: number) => {
-    setErrors(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    return errorState;
+  }, [logErrors, showToast]);
 
-  const clearAllErrors = useCallback(() => {
-    setErrors([]);
-  }, []);
-
-  const clearErrorsBySource = useCallback((source: string) => {
-    setErrors(prev => prev.filter(error => error.source !== source));
-  }, []);
-
-  const handleAsyncError = useCallback(async <T>(
+  // Выполнение операции с повторными попытками
+  const executeWithRetry = useCallback(async <T>(
     operation: () => Promise<T>,
-    errorMessage: string = 'Произошла ошибка',
-    options: ErrorHandlerOptions = {}
+    operationId: string,
+    customOptions?: Partial<UseErrorHandlerOptions>
   ): Promise<T | null> => {
-    try {
-      return await operation();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : errorMessage;
-      const code = error instanceof Error && 'code' in error ? error.code as string : undefined;
-      
-      addError(message, code, options);
-      return null;
-    }
-  }, [addError]);
+    const opts = { ...options, ...customOptions };
+    const currentRetries = retryCountRef.current.get(operationId) || 0;
 
-  const withErrorBoundary = useCallback(<T extends any[], R>(
-    fn: (...args: T) => R,
-    errorMessage?: string,
-    options: ErrorHandlerOptions = {}
-  ) => {
-    return (...args: T): R | null => {
-      try {
-        return fn(...args);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : (errorMessage || 'Произошла ошибка');
-        const code = error instanceof Error && 'code' in error ? error.code as string : undefined;
+    try {
+      const result = await operation();
+      retryCountRef.current.delete(operationId); // Сброс счетчика при успехе
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      
+      if (enableRetry && currentRetries < maxRetries) {
+        retryCountRef.current.set(operationId, currentRetries + 1);
+        setIsRetrying(true);
         
-        addError(message, code, options);
+        handleError(
+          `Попытка ${currentRetries + 1}/${maxRetries}: ${errorMessage}`,
+          { operationId, attempt: currentRetries + 1 },
+          'warning'
+        );
+
+        // Задержка перед повторной попыткой
+        await new Promise(resolve => setTimeout(resolve, retryDelay * (currentRetries + 1)));
+        
+        setIsRetrying(false);
+        return executeWithRetry(operation, operationId, customOptions);
+      } else {
+        handleError(
+          `Операция завершилась неудачей после ${currentRetries + 1} попыток: ${errorMessage}`,
+          { operationId, finalAttempt: true },
+          'error'
+        );
+        retryCountRef.current.delete(operationId);
         return null;
       }
-    };
-  }, [addError]);
+    }
+  }, [enableRetry, maxRetries, retryDelay, handleError]);
 
-  const handleSyncError = useCallback((
-    error: unknown,
-    fallbackMessage: string = 'Произошла ошибка',
-    options: ErrorHandlerOptions = {}
-  ) => {
-    const message = error instanceof Error ? error.message : fallbackMessage;
-    const code = error instanceof Error && 'code' in error ? error.code as string : undefined;
+  // Безопасное выполнение операции
+  const safeExecute = useCallback(async <T>(
+    operation: () => Promise<T> | T,
+    fallback?: T,
+    errorContext?: string
+  ): Promise<T | undefined> => {
+    try {
+      const result = await operation();
+      return result;
+    } catch (error) {
+      handleError(
+        error instanceof Error ? error : new Error('Неизвестная ошибка'),
+        errorContext
+      );
+      return fallback;
+    }
+  }, [handleError]);
+
+  // Очистка ошибок
+  const clearErrors = useCallback(() => {
+    setErrors([]);
+    retryCountRef.current.clear();
+  }, []);
+
+  // Получение статистики ошибок
+  const getErrorStats = useCallback(() => {
+    const now = Date.now();
+    const recentErrors = errors.filter(error => now - error.timestamp < 300000); // За последние 5 минут
     
-    addError(message, code, options);
-  }, [addError]);
-
-  const getRecentErrors = useCallback((minutes: number = 5): ErrorState[] => {
-    const cutoff = new Date(Date.now() - minutes * 60 * 1000);
-    return errors.filter(error => error.timestamp > cutoff);
+    return {
+      total: errors.length,
+      recent: recentErrors.length,
+      byType: {
+        errors: errors.filter(e => e.type === 'error').length,
+        warnings: errors.filter(e => e.type === 'warning').length,
+        info: errors.filter(e => e.type === 'info').length
+      },
+      lastError: errors.length > 0 ? errors[errors.length - 1] : null
+    };
   }, [errors]);
+
+  // Удаление конкретной ошибки
+  const dismissError = useCallback((timestamp: number) => {
+    setErrors(prev => prev.filter(error => error.timestamp !== timestamp));
+  }, []);
 
   return {
     errors,
-    addError,
-    clearError,
-    clearAllErrors,
-    clearErrorsBySource,
-    handleAsyncError,
-    withErrorBoundary,
-    handleSyncError,
-    getRecentErrors
+    isRetrying,
+    handleError,
+    addError: handleError, // Алиас для обратной совместимости
+    executeWithRetry,
+    safeExecute,
+    clearErrors,
+    dismissError,
+    getErrorStats
   };
 };

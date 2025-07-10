@@ -1,9 +1,11 @@
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { TradingSession, CandleData } from '@/types/session';
 import { calculateCandleDateTime } from '@/utils/dateTimeUtils';
 import { useApplicationState } from '@/hooks/useApplicationState';
+import { usePerformance } from '@/hooks/usePerformance';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import CandleInputHeader from './candle-input/CandleInputHeader';
 import CandleInputForm from './candle-input/CandleInputForm';
 import CandleInputValidation from './candle-input/CandleInputValidation';
@@ -18,19 +20,23 @@ interface CandleInputProps {
   onCandleSaved: (candleData: CandleData) => Promise<void>;
 }
 
-const CandleInput = ({ 
+const CandleInput = memo(({ 
   currentSession,
   candles,
   pair,
   onCandleSaved
 }: CandleInputProps) => {
   const { saveCandle, deleteLastCandle } = useApplicationState();
+  const { trackPerformance, memoizedValue } = usePerformance();
+  const { safeExecute } = useErrorHandler();
   
-  const nextCandleIndex = useMemo(() => {
-    return Math.max(currentSession.current_candle_index + 1, candles.length);
-  }, [currentSession.current_candle_index, candles.length]);
+  const nextCandleIndex = memoizedValue(
+    () => Math.max(currentSession.current_candle_index + 1, candles.length),
+    [currentSession.current_candle_index, candles.length],
+    'nextCandleIndex'
+  );
 
-  const nextCandleTime = useMemo(() => {
+  const nextCandleTime = memoizedValue(() => {
     try {
       return calculateCandleDateTime(
         currentSession.start_date,
@@ -42,7 +48,7 @@ const CandleInput = ({
       console.error('Error calculating next candle time:', error);
       return '';
     }
-  }, [currentSession, nextCandleIndex]);
+  }, [currentSession, nextCandleIndex], 'nextCandleTime');
 
   const {
     formData,
@@ -58,17 +64,30 @@ const CandleInput = ({
     candles,
     nextCandleIndex,
     onSave: async (candleData) => {
-      const savedCandle = await saveCandle(candleData);
-      if (savedCandle) {
-        await onCandleSaved(savedCandle);
-      }
-      return savedCandle;
+      return trackPerformance('saveCandleOperation', async () => {
+        const savedCandle = await safeExecute(
+          () => saveCandle(candleData),
+          null,
+          'Сохранение свечи'
+        );
+        
+        if (savedCandle) {
+          await safeExecute(
+            () => onCandleSaved(savedCandle),
+            undefined,
+            'Обработка сохраненной свечи'
+          );
+        }
+        return savedCandle;
+      });
     },
-    onDeleteLast: deleteLastCandle
+    onDeleteLast: () => trackPerformance('deleteCandleOperation', () => 
+      safeExecute(() => deleteLastCandle(), undefined, 'Удаление последней свечи')
+    )
   });
 
   return (
-    <Card className="p-6 bg-slate-700/30 border-slate-600">
+    <Card className="p-6 bg-gradient-to-br from-card/80 to-card/50 border-border/50 backdrop-blur-sm animate-fade-in">
       <CandleInputHeader
         currentSession={currentSession}
         nextCandleIndex={nextCandleIndex}
@@ -98,6 +117,8 @@ const CandleInput = ({
       <CandleInputStats candles={candles} />
     </Card>
   );
-};
+});
+
+CandleInput.displayName = 'CandleInput';
 
 export default CandleInput;
