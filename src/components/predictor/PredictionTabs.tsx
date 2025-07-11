@@ -8,6 +8,7 @@ import CandleInput from '../session/CandleInput';
 import PatternDetection from '../patterns/PatternDetection';
 import PredictionDisplay from './PredictionDisplay';
 import WeightedPriceForecast from './WeightedPriceForecast';
+import TradingAnalytics from '../analytics/TradingAnalytics';
 
 interface PredictionTabsProps {
   currentSession: TradingSession | null;
@@ -28,7 +29,7 @@ const PredictionTabs = memo(({
 }: PredictionTabsProps) => {
   return (
     <Tabs defaultValue="session" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4 bg-card/50 backdrop-blur-sm border border-border/50">
+      <TabsList className="grid w-full grid-cols-5 bg-card/50 backdrop-blur-sm border border-border/50">
         <TabsTrigger 
           value="session" 
           className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
@@ -52,6 +53,12 @@ const PredictionTabs = memo(({
           className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
         >
           Паттерны
+        </TabsTrigger>
+        <TabsTrigger 
+          value="analytics" 
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
+        >
+          Аналитика
         </TabsTrigger>
       </TabsList>
 
@@ -93,6 +100,10 @@ const PredictionTabs = memo(({
 
       <TabsContent value="patterns" className="animate-fade-in">
         <PatternDetection candles={candles} />
+      </TabsContent>
+
+      <TabsContent value="analytics" className="animate-fade-in">
+        <TradingAnalytics candles={candles} />
       </TabsContent>
     </Tabs>
   );

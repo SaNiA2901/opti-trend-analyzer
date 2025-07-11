@@ -1,5 +1,6 @@
 import { CandleData } from '@/types/session';
 import { PredictionResult, PredictionConfig } from '@/types/trading';
+import { AdvancedMLService } from './advancedMLService';
 
 // Интерфейсы для продвинутых моделей
 interface TechnicalIndicators {
@@ -59,6 +60,8 @@ const adaptiveWeights: ModelWeights = {
 };
 
 export const predictionService = {
+  // Экземпляр ML сервиса
+  mlService: AdvancedMLService.getInstance(),
   // Расчет технических индикаторов
   calculateTechnicalIndicators(candles: CandleData[], currentIndex: number): TechnicalIndicators {
     const lookback = Math.min(14, currentIndex + 1);
@@ -309,14 +312,18 @@ export const predictionService = {
     };
   },
 
-  // Продвинутый генератор прогнозов
+  // Продвинутый генератор прогнозов с ML
   async generateAdvancedPrediction(
     candles: CandleData[], 
     currentIndex: number,
     config: PredictionConfig
   ): Promise<PredictionResult | null> {
     try {
-      if (candles.length < 5 || currentIndex < 0) return null;
+      // Используем ML модель для основного прогноза
+      const mlPrediction = this.mlService.predict(candles, currentIndex);
+      
+      // Дополняем данными из классической модели
+      if (candles.length < 5 || currentIndex < 0) return mlPrediction;
       
       const current = candles[currentIndex];
       if (!current) return null;
