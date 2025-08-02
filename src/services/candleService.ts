@@ -360,11 +360,56 @@ export const candleService = {
   },
 
   // Batch операции
-  async saveCandleBatch(sessionId: string, candleData: Omit<CandleData, 'id'>): Promise<void> {
-    addToBatch({
-      type: 'insert',
-      data: candleData,
-      sessionId
+  async saveCandleBatch(candles: CandleData[]): Promise<CandleData[]> {
+    if (candles.length === 0) return [];
+    
+    return retryOperation(async () => {
+      const { data, error } = await supabase
+        .from('candle_data')
+        .upsert(candles, { 
+          onConflict: 'session_id,candle_index',
+          ignoreDuplicates: false 
+        })
+        .select();
+
+      if (error) {
+        console.error('Error saving candle batch:', error);
+        throw new Error(`Failed to save candle batch: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from batch save operation');
+      }
+      
+      // Обновляем кэш для каждой сессии
+      const sessionGroups = new Map<string, CandleData[]>();
+      data.forEach(candle => {
+        if (!sessionGroups.has(candle.session_id)) {
+          sessionGroups.set(candle.session_id, []);
+        }
+        sessionGroups.get(candle.session_id)!.push(candle);
+      });
+      
+      sessionGroups.forEach((sessionCandles, sessionId) => {
+        const cacheKey = getCacheKey(sessionId);
+        const cached = candleCache.get(cacheKey);
+        
+        if (cached && isCacheValid(cached.timestamp)) {
+          sessionCandles.forEach(candle => {
+            const existingIndex = cached.data.findIndex(c => c.candle_index === candle.candle_index);
+            if (existingIndex >= 0) {
+              cached.data[existingIndex] = candle;
+            } else {
+              cached.data.push(candle);
+            }
+          });
+          cached.data.sort((a, b) => a.candle_index - b.candle_index);
+          cached.lastIndex = Math.max(cached.lastIndex, ...sessionCandles.map(c => c.candle_index));
+          cached.timestamp = Date.now();
+        }
+      });
+      
+      return data;
     });
   },
 
