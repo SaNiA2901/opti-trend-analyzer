@@ -7,8 +7,8 @@ import { Database, Plus } from 'lucide-react';
 import { TradingSession } from '@/types/session';
 import { useApplicationState } from '@/hooks/useApplicationState';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import SessionForm from './SessionForm';
-import SessionCard from './SessionCard';
+import { SessionForm } from './SessionForm';
+import { SessionCard } from './SessionCard';
 
 interface SessionCreationData {
   session_name: string;
@@ -95,14 +95,12 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
         </Button>
       </div>
 
-      {showCreateForm && (
-        <SessionForm
-          onSubmit={handleCreateSession}
-          onCancel={() => setShowCreateForm(false)}
-          isLoading={isLoading}
-          pair={pair}
-        />
-      )}
+      <SessionForm
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        onSubmit={handleCreateSession}
+        isSubmitting={isLoading}
+      />
 
       {filteredSessions.length > 0 && (
         <div className="space-y-3">
@@ -113,9 +111,9 @@ const SessionManager = ({ pair }: SessionManagerProps) => {
               key={session.id}
               session={session}
               isActive={currentSession?.id === session.id}
-              isLoading={isLoading}
-              onLoad={handleLoadSession}
+              onSelect={(s) => handleLoadSession(s.id)}
               onDelete={handleDeleteSession}
+              onDuplicate={(id) => console.log('Duplicate:', id)}
             />
           ))}
         </div>

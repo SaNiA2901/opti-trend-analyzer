@@ -1,64 +1,150 @@
 
-import { Card } from '@/components/ui/card';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Play, Trash2 } from 'lucide-react';
+import { Play, Trash2, Copy, BarChart3 } from 'lucide-react';
 import { TradingSession } from '@/types/session';
+import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface SessionCardProps {
   session: TradingSession;
-  isActive: boolean;
-  isLoading: boolean;
-  onLoad: (sessionId: string) => void;
+  isActive?: boolean;
+  onSelect: (session: TradingSession) => void;
   onDelete: (sessionId: string) => void;
+  onDuplicate: (sessionId: string) => void;
+  candles?: number;
+  lastPrice?: number;
+  className?: string;
 }
 
-const SessionCard = ({ session, isActive, isLoading, onLoad, onDelete }: SessionCardProps) => {
+export const SessionCard: React.FC<SessionCardProps> = ({
+  session,
+  isActive = false,
+  onSelect,
+  onDelete,
+  onDuplicate,
+  candles = 0,
+  lastPrice,
+  className = ''
+}) => {
+  const handleSelect = () => {
+    onSelect(session);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(session.id);
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDuplicate(session.id);
+  };
+
+  const formatSessionTime = (date: string, time: string) => {
+    try {
+      const sessionDate = new Date(`${date}T${time}`);
+      return formatDistanceToNow(sessionDate, { addSuffix: true, locale: ru });
+    } catch {
+      return 'Неизвестно';
+    }
+  };
+
   return (
-    <Card className={`p-4 border-slate-600 hover:bg-slate-700/50 transition-colors ${
-      isActive ? 'bg-slate-700/50 border-green-500' : 'bg-slate-700/30'
-    }`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-2">
-            <h5 className="text-white font-medium">{session.session_name}</h5>
-            <Badge className="bg-blue-600 text-white">{session.timeframe}</Badge>
-            {isActive && (
-              <Badge className="bg-green-600 text-white">Активна</Badge>
-            )}
+    <Card 
+      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+        isActive 
+          ? 'ring-2 ring-primary border-primary shadow-md' 
+          : 'hover:border-primary/50'
+      } ${className}`}
+      onClick={handleSelect}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold truncate">
+            {session.session_name}
+          </CardTitle>
+          {isActive && (
+            <Badge variant="default" className="ml-2">
+              Активна
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Основная информация */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-muted-foreground">Пара:</span>
+            <div className="font-medium">{session.pair}</div>
           </div>
-          
-          <div className="text-sm text-slate-400">
-            {session.start_date} в {session.start_time} • Свечей: {session.current_candle_index + 1}
+          <div>
+            <span className="text-muted-foreground">Таймфрейм:</span>
+            <div className="font-medium">{session.timeframe}</div>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button 
-            onClick={() => onLoad(session.id)}
-            disabled={isLoading || isActive}
-            className={isActive 
-              ? "bg-green-700 hover:bg-green-800" 
-              : "bg-green-600 hover:bg-green-700"}
+
+        {/* Статистика */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-muted-foreground">Свечей:</span>
+            <div className="font-medium flex items-center">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              {candles}
+            </div>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Индекс:</span>
+            <div className="font-medium">{session.current_candle_index}</div>
+          </div>
+        </div>
+
+        {lastPrice && (
+          <div className="text-sm">
+            <span className="text-muted-foreground">Последняя цена:</span>
+            <div className="font-medium text-lg">{lastPrice.toFixed(5)}</div>
+          </div>
+        )}
+
+        {/* Время создания */}
+        <div className="text-xs text-muted-foreground">
+          Создана {formatSessionTime(session.start_date, session.start_time)}
+        </div>
+
+        {/* Действия */}
+        <div className="flex gap-2 pt-2">
+          <Button
             size="sm"
+            onClick={handleSelect}
+            className="flex-1"
+            variant={isActive ? "secondary" : "default"}
           >
-            <Play className="h-4 w-4 mr-2" />
-            {isActive ? 'Активна' : 'Загрузить'}
+            <Play className="h-3 w-3 mr-1" />
+            {isActive ? 'Открыта' : 'Открыть'}
           </Button>
           
-          <Button 
-            onClick={() => onDelete(session.id)}
-            disabled={isLoading}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDuplicate}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+          
+          <Button
+            size="sm"
             variant="destructive"
-            size="sm"
-            className="bg-red-600 hover:bg-red-700"
+            onClick={handleDelete}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
 
-export default SessionCard;
+

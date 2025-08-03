@@ -1,15 +1,13 @@
-import { useState, memo, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Database, Plus, RefreshCw, Upload, Download, Trash2 } from 'lucide-react';
-import { useNewApplicationState } from '@/hooks/useNewApplicationState';
-import SessionForm from './SessionForm';
-import SessionCard from './SessionCard';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from 'sonner';
+import React, { useState, useCallback, useEffect } from 'react';
+import { SessionList } from './SessionList';
+import { SessionForm } from './SessionForm';
+import { useTradingStore } from '@/store/TradingStore';
+import { useSessionActions } from '@/hooks/store/useSessionActions';
+import { useStoreEventHandlers } from '@/hooks/store/useStoreEventHandlers';
+import { useToast } from '@/hooks/use-toast';
+import { TradingSession } from '@/types/session';
 
-interface SessionCreationData {
+interface SessionFormData {
   session_name: string;
   pair: string;
   timeframe: string;
@@ -17,212 +15,138 @@ interface SessionCreationData {
   start_time: string;
 }
 
-interface NewSessionManagerProps {
-  pair: string;
-}
-
-const NewSessionManager = memo(({ pair }: NewSessionManagerProps) => {
-  const [showCreateForm, setShowCreateForm] = useState(false);
+export const NewSessionManager: React.FC = () => {
+  const { state } = useTradingStore();
+  const { createSession, loadSession, deleteSession, loadSessions } = useSessionActions();
+  const { toast } = useToast();
   
-  const {
-    sessions,
-    currentSession,
-    isLoading,
-    errors,
-    isConnected,
-    loadSessions,
-    createSession,
-    loadSession,
-    deleteSession,
-    duplicateSession
-  } = useNewApplicationState();
+  // UI состояние
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('date');
+  const [filterBy, setFilterBy] = useState('all');
 
-  // Фильтруем сессии по текущей паре
-  const filteredSessions = sessions.filter(s => s.pair === pair);
+  useStoreEventHandlers();
 
-  // Обработка создания сессии
-  const handleCreateSession = useCallback(async (sessionData: SessionCreationData) => {
+  // Загрузка сессий при монтировании
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
+  // Обработчики событий
+  const handleCreateSession = useCallback(() => {
+    setIsFormOpen(true);
+  }, []);
+
+  const handleFormSubmit = useCallback(async (data: SessionFormData) => {
+    setIsSubmitting(true);
     try {
-      const session = await createSession(sessionData);
-      setShowCreateForm(false);
-      toast.success(`Сессия "${session.session_name}" создана успешно`);
+      await createSession(data);
+      toast({
+        title: "Успех",
+        description: "Сессия создана успешно"
+      });
+      setIsFormOpen(false);
     } catch (error) {
-      console.error('Failed to create session:', error);
-      toast.error('Не удалось создать сессию');
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать сессию",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [createSession]);
+  }, [createSession, toast]);
 
-  // Обработка загрузки сессии
-  const handleLoadSession = useCallback(async (sessionId: string) => {
+  const handleSelectSession = useCallback(async (session: TradingSession) => {
     try {
-      await loadSession(sessionId);
-      toast.success('Сессия загружена успешно');
+      await loadSession(session.id);
+      toast({
+        title: "Успех",
+        description: `Сессия "${session.session_name}" загружена`
+      });
     } catch (error) {
-      console.error('Failed to load session:', error);
-      toast.error('Не удалось загрузить сессию');
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить сессию",
+        variant: "destructive"
+      });
     }
-  }, [loadSession]);
+  }, [loadSession, toast]);
 
-  // Обработка удаления сессии
   const handleDeleteSession = useCallback(async (sessionId: string) => {
     try {
       await deleteSession(sessionId);
-      toast.success('Сессия удалена успешно');
+      toast({
+        title: "Успех",
+        description: "Сессия удалена"
+      });
     } catch (error) {
-      console.error('Failed to delete session:', error);
-      toast.error('Не удалось удалить сессию');
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить сессию",
+        variant: "destructive"
+      });
     }
-  }, [deleteSession]);
+  }, [deleteSession, toast]);
 
-  // Обработка дублирования сессии
   const handleDuplicateSession = useCallback(async (sessionId: string) => {
-    const originalSession = sessions.find(s => s.id === sessionId);
+    const originalSession = state.sessions.find(s => s.id === sessionId);
     if (!originalSession) return;
 
-    const newName = `${originalSession.session_name} (копия)`;
-    
-    try {
-      await duplicateSession(sessionId, newName);
-      toast.success('Сессия дублирована успешно');
-    } catch (error) {
-      console.error('Failed to duplicate session:', error);
-      toast.error('Не удалось дублировать сессию');
-    }
-  }, [sessions, duplicateSession]);
+    const duplicatedData: SessionFormData = {
+      session_name: `${originalSession.session_name} (копия)`,
+      pair: originalSession.pair,
+      timeframe: originalSession.timeframe,
+      start_date: new Date().toISOString().split('T')[0],
+      start_time: new Date().toTimeString().split(' ')[0].slice(0, 5)
+    };
 
-  // Обновление списка сессий
-  const handleRefreshSessions = useCallback(async () => {
     try {
-      await loadSessions();
-      toast.success('Список сессий обновлен');
+      await createSession(duplicatedData);
+      toast({
+        title: "Успех",
+        description: "Сессия скопирована"
+      });
     } catch (error) {
-      console.error('Failed to refresh sessions:', error);
-      toast.error('Не удалось обновить список сессий');
+      toast({
+        title: "Ошибка",
+        description: "Не удалось скопировать сессию",
+        variant: "destructive"
+      });
     }
+  }, [state.sessions, createSession, toast]);
+
+  const handleRefresh = useCallback(async () => {
+    await loadSessions();
   }, [loadSessions]);
 
   return (
-    <Card className="p-6 bg-card/80 border-border/50 backdrop-blur-sm">
-      {/* Заголовок и статус */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Database className="h-6 w-6 text-primary" />
-          <h3 className="text-xl font-semibold">Управление сессиями ({pair})</h3>
-          
-          {/* Статус подключения */}
-          <Badge variant={isConnected ? "default" : "destructive"}>
-            {isConnected ? "Подключено" : "Не подключено"}
-          </Badge>
-          
-          {/* Активная сессия */}
-          {currentSession && (
-            <Badge variant="secondary" className="bg-primary/10 text-primary">
-              Активна: {currentSession.session_name}
-            </Badge>
-          )}
-        </div>
+    <div className="space-y-6">
+      <SessionList
+        sessions={state.sessions}
+        currentSessionId={state.currentSession?.id}
+        isLoading={state.isLoading}
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        filterBy={filterBy}
+        onSearchChange={setSearchTerm}
+        onSortChange={setSortBy}
+        onFilterChange={setFilterBy}
+        onCreateSession={handleCreateSession}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+        onDuplicateSession={handleDuplicateSession}
+        onRefresh={handleRefresh}
+      />
 
-        {/* Действия */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshSessions}
-            disabled={isLoading}
-            className="bg-background/50"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Обновить
-          </Button>
-
-          <Button 
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            disabled={isLoading}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Новая сессия
-          </Button>
-        </div>
-      </div>
-
-      {/* Ошибки */}
-      {errors.length > 0 && (
-        <Alert className="mb-4 border-destructive/50 bg-destructive/10">
-          <AlertDescription>
-            <ul className="list-disc list-inside space-y-1">
-              {errors.slice(0, 3).map((error, index) => (
-                <li key={index} className="text-destructive">{error}</li>
-              ))}
-              {errors.length > 3 && (
-                <li className="text-muted-foreground">и еще {errors.length - 3} ошибок...</li>
-              )}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Форма создания сессии */}
-      {showCreateForm && (
-        <div className="mb-6">
-          <SessionForm
-            onSubmit={handleCreateSession}
-            onCancel={() => setShowCreateForm(false)}
-            isLoading={isLoading}
-            pair={pair}
-          />
-        </div>
-      )}
-
-      {/* Список сессий */}
-      {filteredSessions.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium">
-              Доступные сессии ({filteredSessions.length})
-            </h4>
-            
-            {isLoading && (
-              <div className="text-sm text-muted-foreground">
-                Загрузка...
-              </div>
-            )}
-          </div>
-          
-          {filteredSessions.map(session => (
-            <SessionCard
-              key={session.id}
-              session={session}
-              isActive={currentSession?.id === session.id}
-              isLoading={isLoading}
-              onLoad={handleLoadSession}
-              onDelete={handleDeleteSession}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
-          <h4 className="text-lg font-medium mb-2">Нет сессий для {pair}</h4>
-          <p className="text-sm">
-            Создайте новую сессию для начала работы с торговыми данными
-          </p>
-          {!showCreateForm && (
-            <Button 
-              onClick={() => setShowCreateForm(true)}
-              className="mt-4"
-              disabled={isLoading}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Создать первую сессию
-            </Button>
-          )}
-        </div>
-      )}
-    </Card>
+      <SessionForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        isSubmitting={isSubmitting}
+      />
+    </div>
   );
-});
-
-NewSessionManager.displayName = 'NewSessionManager';
-
-export default NewSessionManager;
+};
