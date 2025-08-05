@@ -22,6 +22,7 @@ export interface CandleData {
   close: number;
   volume: number;
   candle_datetime: string;
+  spread?: number;
   prediction_direction?: string;
   prediction_probability?: number;
   prediction_confidence?: number;

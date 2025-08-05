@@ -6,9 +6,9 @@ import { TradingSession, CandleData } from '@/types/session';
 import { calculateCandleDateTime } from '@/utils/dateTimeUtils';
 import { useNewApplicationState } from '@/hooks/useNewApplicationState';
 import { useCandleInputLogic } from '@/hooks/candle/useCandleInputLogic';
-import CandleInputForm from './candle-input/CandleInputForm';
+import { CandleInputForm } from './candle-input/CandleInputForm';
 import CandleInputValidation from './candle-input/CandleInputValidation';
-import CandleInputStats from './candle-input/CandleInputStats';
+import { CandleInputStats } from './candle-input/CandleInputStats';
 import { Clock, TrendingUp, BarChart3, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -167,14 +167,13 @@ const NewCandleInput = memo(({
       {/* Форма ввода данных */}
       <div className="space-y-6">
         <CandleInputForm
-          formData={formData}
-          onFieldChange={updateField}
-          disabled={isSubmitting || isLoading}
+          currentSession={currentSession}
+          pair={pair}
         />
 
         {/* Валидация */}
         <CandleInputValidation
-          errors={errors}
+          errors={Object.values(errors).filter(Boolean)}
           isFormValid={isFormValid}
         />
 
@@ -217,7 +216,7 @@ const NewCandleInput = memo(({
         </div>
 
         {/* Статистика свечей */}
-        <CandleInputStats candles={candles.filter(c => c.session_id === currentSession.id)} />
+        <CandleInputStats />
       </div>
     </Card>
   );

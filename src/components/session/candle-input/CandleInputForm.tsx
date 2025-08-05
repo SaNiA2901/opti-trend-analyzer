@@ -68,7 +68,7 @@ export const CandleInputForm: React.FC<CandleInputFormProps> = ({
     } catch (error) {
       console.error('Ошибка при добавлении свечи:', error);
     }
-  }, [submitForm, addCandle, reset]);
+  }, [submitForm, saveCandle, reset]);
 
   const handleQuickCalculation = useCallback(() => {
     if (formData.open && formData.high && formData.low) {

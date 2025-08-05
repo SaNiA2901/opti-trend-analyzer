@@ -22,23 +22,18 @@ export const useCandleInputLogic = ({
   const {
     formData,
     errors,
-    updateField,
-    resetForm,
-    validateForm,
-    isFormValid,
-    getNumericData
-  } = useCandleForm();
-
-  const {
-    isSubmitting,
-    handleSave: saveAction,
-    handleDeleteLast: deleteAction
-  } = useCandleActions({
-    currentSession,
-    nextCandleIndex,
-    onSave,
-    onDeleteLast
+    isValid,
+    isSubmitting: formSubmitting,
+    handleInputChange,
+    handleSubmit,
+    reset,
+    validateForm
+  } = useCandleForm({
+    sessionId: currentSession?.id || '',
+    candleIndex: nextCandleIndex
   });
+
+  const isSubmitting = formSubmitting;
 
   const lastCandle = useMemo(() => {
     if (candles.length === 0) return null;
@@ -49,32 +44,37 @@ export const useCandleInputLogic = ({
 
   // Мемоизируем обработчики для предотвращения повторных рендеров
   const handleSave = useCallback(async () => {
-    if (!validateForm()) return;
-    
-    const numericData = getNumericData();
-    await saveAction(numericData, resetForm);
-  }, [validateForm, getNumericData, saveAction, resetForm]);
+    try {
+      const candleData = await handleSubmit();
+      if (candleData) {
+        await onSave(candleData);
+        reset();
+      }
+    } catch (error) {
+      console.error('Error saving candle:', error);
+    }
+  }, [handleSubmit, onSave, reset]);
 
   const handleDeleteLast = useCallback(async () => {
     if (lastCandle && window.confirm('Удалить последнюю свечу?')) {
-      await deleteAction(resetForm);
+      await onDeleteLast();
     }
-  }, [lastCandle, deleteAction, resetForm]);
+  }, [lastCandle, onDeleteLast]);
 
   // Автозаполнение цены открытия
   useEffect(() => {
     if (lastCandle && !formData.open && !isSubmitting) {
-      updateField('open', lastCandle.close.toString());
+      handleInputChange('open', lastCandle.close.toString());
     }
-  }, [lastCandle?.close, formData.open, updateField, isSubmitting]);
+  }, [lastCandle?.close, formData.open, handleInputChange, isSubmitting]);
 
   return {
     formData,
     errors,
     isSubmitting,
-    isFormValid,
+    isFormValid: isValid,
     lastCandle,
-    updateField,
+    updateField: handleInputChange,
     handleSave,
     handleDeleteLast
   };

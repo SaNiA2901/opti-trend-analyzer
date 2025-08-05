@@ -7,10 +7,10 @@ import { useApplicationState } from '@/hooks/useApplicationState';
 import { usePerformance } from '@/hooks/usePerformance';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import CandleInputHeader from './candle-input/CandleInputHeader';
-import CandleInputForm from './candle-input/CandleInputForm';
+import { CandleInputForm } from './candle-input/CandleInputForm';
 import CandleInputValidation from './candle-input/CandleInputValidation';
-import CandleInputActions from './candle-input/CandleInputActions';
-import CandleInputStats from './candle-input/CandleInputStats';
+import { CandleInputActions } from './candle-input/CandleInputActions';
+import { CandleInputStats } from './candle-input/CandleInputStats';
 import { useCandleInputLogic } from '@/hooks/candle/useCandleInputLogic';
 
 interface CandleInputProps {
@@ -96,25 +96,18 @@ const CandleInput = memo(({
       />
 
       <CandleInputForm
-        formData={formData}
-        onFieldChange={updateField}
-        disabled={isSubmitting}
+        currentSession={currentSession}
+        pair={pair}
       />
 
       <CandleInputValidation
-        errors={errors}
+        errors={Object.values(errors).filter(Boolean)}
         isFormValid={isFormValid}
       />
 
-      <CandleInputActions
-        isFormValid={isFormValid}
-        isSubmitting={isSubmitting}
-        lastCandle={lastCandle}
-        onSave={handleSave}
-        onDeleteLast={handleDeleteLast}
-      />
+      <CandleInputActions />
 
-      <CandleInputStats candles={candles} />
+      <CandleInputStats />
     </Card>
   );
 });

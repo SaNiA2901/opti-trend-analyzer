@@ -153,7 +153,7 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
         close: Number(formData.close),
         volume: Number(formData.volume),
         
-        created_at: new Date().toISOString(),
+        candle_datetime: new Date().toISOString(),
         spread: formData.spread ? Number(formData.spread) : undefined
       };
 
