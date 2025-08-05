@@ -29,7 +29,7 @@ const PredictionTabs = memo(({
 }: PredictionTabsProps) => {
   return (
     <Tabs defaultValue="session" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-5 bg-card/50 backdrop-blur-sm border border-border/50">
+      <TabsList className="grid w-full grid-cols-5 bg-background/95 backdrop-blur-sm border border-border/50 shadow-sm">
         <TabsTrigger 
           value="session" 
           className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"

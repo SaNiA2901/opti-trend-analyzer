@@ -101,7 +101,7 @@ const CandleInput = memo(({
       />
 
       <CandleInputValidation
-        errors={Object.values(errors).filter(Boolean)}
+        errors={Object.values(errors).filter(Boolean) as string[]}
         isFormValid={isFormValid}
       />
 

@@ -89,8 +89,8 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
     }
 
     const isValid = Object.keys(errors).length === 0 && 
-                   formData.open && formData.high && formData.low && 
-                   formData.close && formData.volume;
+                   !!formData.open && !!formData.high && !!formData.low && 
+                   !!formData.close && !!formData.volume;
 
     setState(prev => ({
       ...prev,
