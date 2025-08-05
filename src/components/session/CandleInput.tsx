@@ -58,7 +58,8 @@ const CandleInput = memo(({
     lastCandle,
     updateField,
     handleSave,
-    handleDeleteLast
+    handleDeleteLast,
+    reset
   } = useCandleInputLogic({
     currentSession,
     candles,
@@ -98,6 +99,13 @@ const CandleInput = memo(({
       <CandleInputForm
         currentSession={currentSession}
         pair={pair}
+        formData={formData}
+        errors={errors}
+        isValid={isFormValid}
+        isSubmitting={isSubmitting}
+        onInputChange={updateField}
+        onSubmit={handleSave}
+        onReset={reset}
       />
 
       <CandleInputValidation

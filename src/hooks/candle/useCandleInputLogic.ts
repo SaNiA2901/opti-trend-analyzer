@@ -76,6 +76,7 @@ export const useCandleInputLogic = ({
     lastCandle,
     updateField: handleInputChange,
     handleSave,
-    handleDeleteLast
+    handleDeleteLast,
+    reset
   };
 };

@@ -169,6 +169,13 @@ const NewCandleInput = memo(({
         <CandleInputForm
           currentSession={currentSession}
           pair={pair}
+          formData={{}}
+          errors={{}}
+          isValid={false}
+          isSubmitting={false}
+          onInputChange={() => {}}
+          onSubmit={() => {}}
+          onReset={() => {}}
         />
 
         {/* Валидация */}
