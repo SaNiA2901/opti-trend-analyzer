@@ -59,8 +59,7 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
   }, []);
 
   // Валидация всей формы
-  const validateForm = useCallback(() => {
-    const { formData } = state;
+  const validateForm = useCallback((formData: CandleFormData) => {
     const errors: Partial<Record<keyof CandleFormData, string>> = {};
 
     // Валидация отдельных полей
@@ -92,30 +91,33 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
                    !!formData.open && !!formData.high && !!formData.low && 
                    !!formData.close && !!formData.volume;
 
-    setState(prev => ({
-      ...prev,
-      errors,
-      isValid: !!isValid
-    }));
-
-    return { errors, isValid: !!isValid };
-  }, [state.formData, validateField]);
+    return { errors, isValid };
+  }, [validateField]);
 
   // Обработка изменений полей
   const handleInputChange = useCallback((field: keyof CandleFormData, value: string) => {
     setState(prev => {
       const newFormData = { ...prev.formData, [field]: value };
+      const { errors, isValid } = validateForm(newFormData);
+      
       return {
         ...prev,
-        formData: newFormData
+        formData: newFormData,
+        errors,
+        isValid
       };
     });
-  }, []);
+  }, [validateForm]);
 
   // Валидация в реальном времени
   const validateRealTime = useCallback(() => {
-    validateForm();
-  }, [validateForm]);
+    const { errors, isValid } = validateForm(state.formData);
+    setState(prev => ({
+      ...prev,
+      errors,
+      isValid
+    }));
+  }, [validateForm, state.formData]);
 
   // Автоматический расчет на основе OHLC
   const calculateFromOHLC = useCallback((open: number, high: number, low: number) => {
@@ -132,7 +134,9 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
 
   // Отправка формы
   const handleSubmit = useCallback(async (): Promise<CandleData | null> => {
-    const { errors, isValid } = validateForm();
+    const { errors, isValid } = validateForm(state.formData);
+    
+    setState(prev => ({ ...prev, errors, isValid }));
     
     if (!isValid) {
       return null;
