@@ -44,6 +44,11 @@ export const useCandleInputLogic = ({
 
   // Мемоизируем обработчики для предотвращения повторных рендеров
   const handleSave = useCallback(async () => {
+    if (!currentSession) {
+      console.error('Нет активной сессии для сохранения данных');
+      return;
+    }
+    
     try {
       const candleData = await handleSubmit();
       if (candleData) {
@@ -53,7 +58,7 @@ export const useCandleInputLogic = ({
     } catch (error) {
       console.error('Error saving candle:', error);
     }
-  }, [handleSubmit, onSave, reset]);
+  }, [handleSubmit, onSave, reset, currentSession]);
 
   const handleDeleteLast = useCallback(async () => {
     if (lastCandle && window.confirm('Удалить последнюю свечу?')) {

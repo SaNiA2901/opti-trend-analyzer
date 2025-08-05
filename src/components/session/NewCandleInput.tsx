@@ -13,7 +13,7 @@ import { Clock, TrendingUp, BarChart3, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface NewCandleInputProps {
-  currentSession: TradingSession;
+  currentSession: TradingSession | null;
   pair: string;
   onCandleSaved?: (candleData: CandleData) => Promise<void>;
 }
@@ -23,6 +23,11 @@ const NewCandleInput = memo(({
   pair,
   onCandleSaved
 }: NewCandleInputProps) => {
+  // Если нет активной сессии, не показываем компонент
+  if (!currentSession) {
+    return null;
+  }
+  
   const { 
     candles, 
     nextCandleIndex, 
@@ -56,7 +61,8 @@ const NewCandleInput = memo(({
     lastCandle,
     updateField,
     handleSave,
-    handleDeleteLast
+    handleDeleteLast,
+    reset
   } = useCandleInputLogic({
     currentSession,
     candles,
@@ -169,13 +175,13 @@ const NewCandleInput = memo(({
         <CandleInputForm
           currentSession={currentSession}
           pair={pair}
-          formData={{}}
-          errors={{}}
-          isValid={false}
-          isSubmitting={false}
-          onInputChange={() => {}}
-          onSubmit={() => {}}
-          onReset={() => {}}
+          formData={formData}
+          errors={errors}
+          isValid={isFormValid}
+          isSubmitting={isSubmitting}
+          onInputChange={updateField}
+          onSubmit={handleSave}
+          onReset={reset}
         />
 
         {/* Валидация */}
