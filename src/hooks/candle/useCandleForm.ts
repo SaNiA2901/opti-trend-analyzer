@@ -147,8 +147,7 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
     try {
       const { formData } = state;
       
-      const candleData: CandleData = {
-        id: `${sessionId}-${candleIndex}`,
+      const candleData: Omit<CandleData, 'id'> = {
         session_id: sessionId,
         candle_index: candleIndex,
         open: Number(formData.open),
@@ -156,7 +155,6 @@ export const useCandleForm = ({ sessionId, candleIndex }: UseCandleFormProps) =>
         low: Number(formData.low),
         close: Number(formData.close),
         volume: Number(formData.volume),
-        
         candle_datetime: new Date().toISOString(),
         spread: formData.spread ? Number(formData.spread) : undefined
       };

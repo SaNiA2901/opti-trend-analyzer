@@ -62,29 +62,15 @@ const CandleInput = memo(({
     reset
   } = useCandleInputLogic({
     currentSession,
-    candles,
-    nextCandleIndex,
-    onSave: async (candleData) => {
+    onCandleSaved: async (candleData) => {
       return trackPerformance('saveCandleOperation', async () => {
-        const savedCandle = await safeExecute(
-          () => saveCandle(candleData),
-          null,
-          'Сохранение свечи'
+        await safeExecute(
+          () => onCandleSaved(candleData),
+          undefined,
+          'Обработка сохраненной свечи'
         );
-        
-        if (savedCandle) {
-          await safeExecute(
-            () => onCandleSaved(savedCandle),
-            undefined,
-            'Обработка сохраненной свечи'
-          );
-        }
-        return savedCandle;
       });
-    },
-    onDeleteLast: () => trackPerformance('deleteCandleOperation', () => 
-      safeExecute(() => deleteLastCandle(), undefined, 'Удаление последней свечи')
-    )
+    }
   });
 
   return (

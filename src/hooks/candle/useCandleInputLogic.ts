@@ -2,23 +2,19 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { TradingSession, CandleData } from '@/types/session';
 import { useCandleForm } from './useCandleForm';
-import { useCandleActions } from './useCandleActions';
+import { useNewApplicationState } from '@/hooks/useNewApplicationState';
 
 interface UseCandleInputLogicProps {
   currentSession: TradingSession | null;
-  candles: CandleData[];
-  nextCandleIndex: number;
-  onSave: (candleData: any) => Promise<CandleData>;
-  onDeleteLast: () => Promise<void>;
+  onCandleSaved?: (candleData: CandleData) => Promise<void>;
 }
 
 export const useCandleInputLogic = ({
   currentSession,
-  candles,
-  nextCandleIndex,
-  onSave,
-  onDeleteLast
+  onCandleSaved
 }: UseCandleInputLogicProps) => {
+  const { candles, nextCandleIndex, saveCandle, deleteLastCandle } = useNewApplicationState();
+  
   const {
     formData,
     errors,
@@ -52,19 +48,34 @@ export const useCandleInputLogic = ({
     try {
       const candleData = await handleSubmit();
       if (candleData) {
-        await onSave(candleData);
+        console.log('Saving candle with data:', candleData);
+        const savedCandle = await saveCandle(candleData);
+        console.log('Candle saved successfully:', savedCandle);
+        
+        // Вызываем колбэк после успешного сохранения
+        if (onCandleSaved) {
+          await onCandleSaved(savedCandle);
+        }
+        
         reset();
       }
     } catch (error) {
       console.error('Error saving candle:', error);
+      throw error;
     }
-  }, [handleSubmit, onSave, reset, currentSession]);
+  }, [handleSubmit, saveCandle, reset, currentSession, onCandleSaved]);
 
   const handleDeleteLast = useCallback(async () => {
     if (lastCandle && window.confirm('Удалить последнюю свечу?')) {
-      await onDeleteLast();
+      try {
+        await deleteLastCandle();
+        console.log('Last candle deleted successfully');
+      } catch (error) {
+        console.error('Error deleting last candle:', error);
+        throw error;
+      }
     }
-  }, [lastCandle, onDeleteLast]);
+  }, [lastCandle, deleteLastCandle]);
 
   // Автозаполнение цены открытия
   useEffect(() => {
@@ -82,6 +93,8 @@ export const useCandleInputLogic = ({
     updateField: handleInputChange,
     handleSave,
     handleDeleteLast,
-    reset
+    reset,
+    nextCandleIndex,
+    candles
   };
 };

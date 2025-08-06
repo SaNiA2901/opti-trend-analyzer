@@ -62,33 +62,21 @@ const NewCandleInput = memo(({
     updateField,
     handleSave,
     handleDeleteLast,
-    reset
+    reset,
+    nextCandleIndex: calculatedNextIndex,
+    candles: candlesFromLogic
   } = useCandleInputLogic({
     currentSession,
-    candles,
-    nextCandleIndex,
-    onSave: async (candleData) => {
+    onCandleSaved: async (candleData) => {
       try {
-        const savedCandle = await saveCandle(candleData);
+        toast.success(`Свеча №${candleData.candle_index} сохранена`);
         
         // Вызываем callback если предоставлен
         if (onCandleSaved) {
-          await onCandleSaved(savedCandle);
+          await onCandleSaved(candleData);
         }
-        
-        toast.success(`Свеча №${savedCandle.candle_index} сохранена`);
-        return savedCandle;
       } catch (error) {
         toast.error('Ошибка при сохранении свечи');
-        throw error;
-      }
-    },
-    onDeleteLast: async () => {
-      try {
-        await deleteLastCandle();
-        toast.success('Последняя свеча удалена');
-      } catch (error) {
-        toast.error('Ошибка при удалении свечи');
         throw error;
       }
     }
@@ -147,7 +135,7 @@ const NewCandleInput = memo(({
             
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>Свеча №{nextCandleIndex}</span>
+              <span>Свеча №{calculatedNextIndex}</span>
             </div>
             
             {nextCandleTime && (
