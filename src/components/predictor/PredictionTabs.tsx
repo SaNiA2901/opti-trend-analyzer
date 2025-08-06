@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { TradingSession, CandleData } from '@/types/session';
 import { PredictionResult } from '@/types/trading';
 import SessionManager from '../session/SessionManager';
-import CandleInput from '../session/CandleInput';
+import NewCandleInput from '../session/NewCandleInput';
 import PatternDetection from '../patterns/PatternDetection';
 import PredictionDisplay from './PredictionDisplay';
 import WeightedPriceForecast from './WeightedPriceForecast';
@@ -28,7 +28,7 @@ const PredictionTabs = memo(({
   onCandleSaved 
 }: PredictionTabsProps) => {
   return (
-    <Tabs defaultValue="session" className="space-y-6">
+    <Tabs defaultValue="input" className="space-y-6">
       <TabsList className="grid w-full grid-cols-5 bg-background/95 backdrop-blur-sm border border-border/50 shadow-sm">
         <TabsTrigger 
           value="session" 
@@ -68,9 +68,8 @@ const PredictionTabs = memo(({
 
       <TabsContent value="input" className="animate-fade-in">
         {currentSession ? (
-          <CandleInput 
+          <NewCandleInput 
             currentSession={currentSession}
-            candles={candles}
             pair={pair}
             onCandleSaved={onCandleSaved}
           />

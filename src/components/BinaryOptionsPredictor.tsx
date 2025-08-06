@@ -85,13 +85,6 @@ const BinaryOptionsPredictor = memo(({ pair, timeframe }: BinaryOptionsPredictor
             </div>
           </div>
 
-          {/* Ввод данных свечей */}
-          <div className="mb-6">
-            <NewCandleInput 
-              currentSession={state.currentSession}
-              pair={pair}
-            />
-          </div>
           
           <div className="mt-6">
             <PredictionTabs
