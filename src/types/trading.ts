@@ -28,6 +28,12 @@ export interface PredictionResult {
     trend: number;
   };
   recommendation: string;
+  metadata?: {
+    modelAgreement: number;
+    riskScore: number;
+    marketCondition: string;
+    modelBreakdown: any[];
+  };
 }
 
 export interface ModelStatistics {

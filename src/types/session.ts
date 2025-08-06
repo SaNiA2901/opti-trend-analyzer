@@ -26,6 +26,8 @@ export interface CandleData {
   prediction_direction?: string;
   prediction_probability?: number;
   prediction_confidence?: number;
+  timestamp?: string;
+  created_at?: string;
 }
 
 export interface SessionStats {
