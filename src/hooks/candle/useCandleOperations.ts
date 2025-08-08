@@ -44,20 +44,42 @@ export const useCandleOperations = (
         throw new Error('Не удалось сохранить свечу');
       }
 
-      const newCandleIndex = Math.max(currentSession.current_candle_index, candleData.candle_index);
-      
-      await sessionService.updateSessionCandleIndex(currentSession.id, newCandleIndex);
-
+      // ИСПРАВЛЕНИЕ: Сначала обновляем локальное состояние свечей
       updateCandles(prev => {
         const filtered = prev.filter(c => c.candle_index !== candleData.candle_index);
-        return [...filtered, savedCandle].sort((a, b) => a.candle_index - b.candle_index);
+        const newCandles = [...filtered, savedCandle].sort((a, b) => a.candle_index - b.candle_index);
+        
+        console.log(`🕯️ Обновлено свечей: ${prev.length} -> ${newCandles.length}`);
+        return newCandles;
       });
 
-      setCurrentSession({
-        ...currentSession,
-        current_candle_index: newCandleIndex,
-        updated_at: new Date().toISOString()
-      });
+      // ИСПРАВЛЕНИЕ: Вычисляем правильный индекс на основе реальных данных
+      const newCandleIndex = Math.max(
+        currentSession.current_candle_index, 
+        candleData.candle_index
+      );
+      
+      // Обновляем индекс в БД
+      await sessionService.updateSessionCandleIndex(currentSession.id, newCandleIndex);
+
+      // ИСПРАВЛЕНИЕ: Синхронизируем данные сессии после сохранения
+      try {
+        const syncResult = await sessionService.syncSessionData(currentSession.id);
+        console.log(`📊 Синхронизация: индекс=${syncResult.session.current_candle_index}, свечей=${syncResult.actualCandleCount}`);
+        
+        setCurrentSession({
+          ...syncResult.session,
+          updated_at: new Date().toISOString()
+        });
+      } catch (syncError) {
+        console.warn('Ошибка синхронизации после сохранения свечи:', syncError);
+        // Fallback: обновляем сессию локально
+        setCurrentSession({
+          ...currentSession,
+          current_candle_index: newCandleIndex,
+          updated_at: new Date().toISOString()
+        });
+      }
 
       return savedCandle;
     } catch (error) {
@@ -74,14 +96,31 @@ export const useCandleOperations = (
     
     try {
       await candleService.deleteCandle(currentSession.id, candleIndex);
-      updateCandles(prev => prev.filter(c => c.candle_index !== candleIndex));
+      
+      // ИСПРАВЛЕНИЕ: Обновляем локальное состояние и синхронизируем с БД
+      updateCandles(prev => {
+        const filtered = prev.filter(c => c.candle_index !== candleIndex);
+        console.log(`🗑️ Удалена свеча ${candleIndex}, осталось: ${filtered.length}`);
+        return filtered;
+      });
+
+      // Синхронизируем данные после удаления
+      try {
+        const syncResult = await sessionService.syncSessionData(currentSession.id);
+        console.log(`📊 Синхронизация после удаления: индекс=${syncResult.session.current_candle_index}, свечей=${syncResult.actualCandleCount}`);
+        
+        setCurrentSession(syncResult.session);
+      } catch (syncError) {
+        console.warn('Ошибка синхронизации после удаления свечи:', syncError);
+      }
+      
       console.log('Candle deleted successfully:', candleIndex);
     } catch (error) {
       console.error('Error deleting candle:', error);
       addError('Ошибка удаления свечи', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
-  }, [currentSession, updateCandles, addError]);
+  }, [currentSession, updateCandles, setCurrentSession, addError]);
 
   const updateCandle = useCallback(async (candleIndex: number, updatedData: Partial<CandleData>) => {
     if (!currentSession) {
@@ -92,9 +131,14 @@ export const useCandleOperations = (
       const updatedCandle = await candleService.updateCandle(currentSession.id, candleIndex, updatedData);
 
       if (updatedCandle) {
-        updateCandles(prev => prev.map(c => 
-          c.candle_index === candleIndex ? updatedCandle : c
-        ));
+        updateCandles(prev => {
+          const newCandles = prev.map(c => 
+            c.candle_index === candleIndex ? updatedCandle : c
+          );
+          console.log(`✏️ Обновлена свеча ${candleIndex}`);
+          return newCandles;
+        });
+        
         console.log('Candle updated successfully:', candleIndex);
         return updatedCandle;
       }
@@ -105,9 +149,38 @@ export const useCandleOperations = (
     }
   }, [currentSession, updateCandles, addError]);
 
+  // НОВАЯ ФУНКЦИЯ: Принудительная синхронизация данных
+  const syncCandleData = useCallback(async () => {
+    if (!currentSession) {
+      console.warn('Нет активной сессии для синхронизации');
+      return;
+    }
+
+    try {
+      console.log('🔄 Начинаем синхронизацию данных...');
+      
+      // Загружаем актуальные данные из БД
+      const result = await sessionService.loadSessionWithCandles(currentSession.id);
+      
+      // Обновляем локальное состояние
+      updateCandles(() => {
+        console.log(`📊 Синхронизировано свечей: ${result.candles.length}`);
+        return result.candles;
+      });
+      
+      setCurrentSession(result.session);
+      
+      console.log('✅ Синхронизация завершена успешно');
+    } catch (error) {
+      console.error('Ошибка синхронизации данных:', error);
+      addError('Ошибка синхронизации данных', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [currentSession, updateCandles, setCurrentSession, addError]);
+
   return {
     saveCandle,
     deleteCandle,
-    updateCandle
+    updateCandle,
+    syncCandleData // Экспортируем функцию синхронизации
   };
 };
