@@ -152,16 +152,45 @@ export const sessionService = {
         throw new Error('Session not found');
       }
 
+      // ИСПРАВЛЕНИЕ: Синхронизируем current_candle_index с реальным количеством свечей
+      const candleCount = candlesResult.data?.length || 0;
+      const realMaxIndex = candleCount > 0 
+        ? Math.max(...candlesResult.data.map(c => c.candle_index))
+        : 0;
+      
+      let sessionToReturn = sessionResult.data;
+
+      // Если current_candle_index не соответствует реальным данным, исправляем
+      if (sessionToReturn.current_candle_index !== realMaxIndex) {
+        console.log(`Синхронизация: current_candle_index ${sessionToReturn.current_candle_index} -> ${realMaxIndex}`);
+        
+        const { data: updatedSession, error: updateError } = await supabase
+          .from('trading_sessions')
+          .update({ current_candle_index: realMaxIndex })
+          .eq('id', sessionId)
+          .select()
+          .single();
+
+        if (!updateError && updatedSession) {
+          sessionToReturn = updatedSession;
+          // Обновляем кэш
+          sessionCache.set(sessionId, {
+            data: updatedSession,
+            timestamp: Date.now()
+          });
+        }
+      }
+
       // Кэшируем сессию если она не была кэширована
       if (!cachedSession) {
         sessionCache.set(sessionId, {
-          data: sessionResult.data,
+          data: sessionToReturn,
           timestamp: Date.now()
         });
       }
 
       return {
-        session: sessionResult.data,
+        session: sessionToReturn,
         candles: candlesResult.data || []
       };
     });
@@ -177,10 +206,24 @@ export const sessionService = {
     }
 
     return retryOperation(async () => {
+      // ИСПРАВЛЕНИЕ: Добавляем проверку на корректность индекса
+      // Получаем реальное количество свечей из БД
+      const { data: candlesCount } = await supabase
+        .from('candle_data')
+        .select('candle_index', { count: 'exact' })
+        .eq('session_id', sessionId);
+
+      const actualMaxIndex = candlesCount && candlesCount.length > 0 
+        ? Math.max(...candlesCount.map(c => c.candle_index))
+        : 0;
+
+      // Используем максимальный из переданного индекса и реального
+      const correctIndex = Math.max(candleIndex, actualMaxIndex);
+
       const { error } = await supabase
         .from('trading_sessions')
         .update({ 
-          current_candle_index: candleIndex,
+          current_candle_index: correctIndex,
           updated_at: new Date().toISOString()
         })
         .eq('id', sessionId);
@@ -193,10 +236,72 @@ export const sessionService = {
       // Обновляем кэш
       const cached = sessionCache.get(sessionId);
       if (cached) {
-        cached.data.current_candle_index = candleIndex;
+        cached.data.current_candle_index = correctIndex;
         cached.data.updated_at = new Date().toISOString();
         cached.timestamp = Date.now();
       }
+    });
+  },
+
+  // НОВАЯ ФУНКЦИЯ: Синхронизация данных сессии
+  async syncSessionData(sessionId: string): Promise<{ session: TradingSession; actualCandleCount: number }> {
+    if (!sessionId?.trim()) {
+      throw new Error('Session ID is required and cannot be empty');
+    }
+
+    return retryOperation(async () => {
+      // Получаем актуальные данные из БД
+      const [sessionResult, candleCountResult] = await Promise.all([
+        supabase
+          .from('trading_sessions')
+          .select('*')
+          .eq('id', sessionId)
+          .single(),
+        supabase
+          .from('candle_data')
+          .select('candle_index', { count: 'exact' })
+          .eq('session_id', sessionId)
+      ]);
+
+      if (sessionResult.error) {
+        throw new Error(`Failed to load session: ${sessionResult.error.message}`);
+      }
+
+      const session = sessionResult.data;
+      const actualCandleCount = candleCountResult.data?.length || 0;
+      const actualMaxIndex = actualCandleCount > 0 
+        ? Math.max(...candleCountResult.data.map(c => c.candle_index))
+        : 0;
+
+      // Если есть рассинхронизация, исправляем
+      if (session.current_candle_index !== actualMaxIndex) {
+        console.log(`🔄 Синхронизация сессии ${sessionId}: ${session.current_candle_index} -> ${actualMaxIndex}`);
+        
+        const { data: updatedSession } = await supabase
+          .from('trading_sessions')
+          .update({ current_candle_index: actualMaxIndex })
+          .eq('id', sessionId)
+          .select()
+          .single();
+
+        if (updatedSession) {
+          // Обновляем кэш
+          sessionCache.set(sessionId, {
+            data: updatedSession,
+            timestamp: Date.now()
+          });
+
+          return {
+            session: updatedSession,
+            actualCandleCount
+          };
+        }
+      }
+
+      return {
+        session,
+        actualCandleCount
+      };
     });
   },
 
